@@ -1,0 +1,10 @@
+#!/usr/bin/exec ruby
+
+require 'weaver'
+
+Weaver::site "/Users/david/Sites/testgen" do
+
+	page "", "hello" do
+	end
+	
+end
