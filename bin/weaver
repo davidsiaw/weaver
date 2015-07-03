@@ -4,7 +4,150 @@ require 'weaver'
 
 Weaver::site "/Users/david/Sites/testgen" do
 
-	page "", "hello" do
+	center_page "", "hello" do
+		h2 "Hello!"
+		hr
+	end
+
+	grid_page "mm", "David's Resumé" do
+
+		#sidebar_nav
+		header do
+			col 12 do
+				h1 "David's Resumé"
+			end
+		end
+
+		row do
+			col 12 do
+				h2 "Basic Data"
+			end
+		end
+
+		row do
+			col 4 do
+				ibox "Photo" do
+				end
+			end
+
+			col 4 do
+				ibox do
+					table class: "table" do
+
+						thead do
+							th
+							th "Key"
+							th "Value"
+						end
+
+						tr do
+							td { icon :user }
+							td "Full Name"
+							td "SIAW David Tung Gee"
+						end
+
+						tr do
+							td { icon :github_alt }
+							td "Github"
+							td "https://github.com/davidsiaw"
+						end
+
+						tr do
+							td { icon :home }
+							td "Website"
+							td "https://davidsiaw.net"
+						end
+
+						tr do
+							td { icon :at }
+							td "Email"
+							td "davidsiaw@gmail.com"
+						end
+
+						tr do
+							td { icon :twitter }
+							td "Twitter"
+							td "@davidsiaw"
+						end
+					end
+				end
+			end
+
+		end
+
+		row do
+			col 12 do
+				h2 "Experience"
+			end
+		end
+
+		row do
+			col 4 do
+				ibox "Software Developer (2007-2013)" do
+					p "meow"
+				end
+			end
+			col 4 do
+				ibox "Lead Development Engineer (2014)" do
+					p "meow"
+				end
+			end
+			col 4 do
+				ibox "Senior Engineer (2014-2015)" do
+					p "meow"
+				end
+			end
+		end
+
+		row do
+			col 12 do
+				h2 "Education"
+			end
+		end
+
+
+
+
+		row do
+			col 3 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+			col 3 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+			col 3 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+			col 3 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+		end
+
+		row do
+			col 4 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+			col 4 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+			col 4 do
+				ibox "hello" do
+					p "meow"
+				end
+			end
+		end
 	end
 	
 end
