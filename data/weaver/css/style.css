@@ -422,20 +422,20 @@ body.fixed-sidebar.mini-navbar .navbar-default .nav li a span {
 .top-navigation .navbar {
   margin-bottom: 0;
 }
-.top-navigation .nav > li > a {
+.top-navigation .navbar-static-top .nav > li > a {
   padding: 15px 20px;
   color: #676a6c;
 }
-.top-navigation .nav > li a:hover,
-.top-navigation .nav > li a:focus {
+.top-navigation .navbar-static-top .nav > li a:hover,
+.top-navigation .navbar-static-top .nav > li a:focus {
   background: #fff;
   color: #1ab394;
 }
-.top-navigation .nav > li.active {
+.top-navigation .navbar-static-top .nav > li.active {
   background: #fff;
   border: none;
 }
-.top-navigation .nav > li.active > a {
+.top-navigation .navbar-static-top .nav > li.active > a {
   color: #1ab394;
 }
 .top-navigation .navbar-right {

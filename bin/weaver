@@ -39,17 +39,14 @@ class PreviewApp < Sinatra::Base
 		path = File.join(result[:path])
 
 		if viewFile
-			
-			site = Weaver::Site.new
-			site.instance_eval File.read(viewFile), viewFile
 
-			puts "haha '#{path}'"
-
-			p site.pages
-
+			site = Weaver::Weave.new(viewFile)
 
 			if site.pages.has_key?(path)
-				site.pages[path].generate(0)
+
+				level = viewname.split(/\//, 0).length
+				site.pages[path].generate(level)
+
 			else
 				status 404
 			end
@@ -77,13 +74,3 @@ else
 end
 
 exit!
-
-Weaver::preview "/Users/david/Sites/testgen" do
-
-	center_page "", "hello" do
-		h2 "Hello!"
-		hr
-	end
-
-	
-end

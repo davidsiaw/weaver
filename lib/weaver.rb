@@ -5,11 +5,11 @@ require 'sinatra'
 
 module Weaver
 
-
 	class Elements
 
-		def initialize
+		def initialize(anchors)
 			@inner_content = []
+			@anchors = anchors
 		end
 
 		def method_missing(name, *args, &block)
@@ -19,7 +19,7 @@ module Weaver
 				inner = args.shift
 			end
 			if block
-				elem = Elements.new
+				elem = Elements.new(@anchors)
 				elem.instance_eval(&block)
 				inner = elem.generate
 			end
@@ -44,15 +44,19 @@ module Weaver
 			end
 		end
 
-        def ibox(title=nil, &block)
-    		div class: "ibox float-e-margins" do
-    			if title
-	    			div class: "ibox-title" do
+        def ibox(&block)
+        	panel = Panel.new(@anchors)
+        	panel.instance_eval(&block)
+        	@inner_content << panel.generate
+        end
+
+        def panel(title, &block)
+        	div class: "panel panel-default" do
+        		div class: "panel-heading" do
 	    				h5 title
-	    			end
-    			end
-    			div class: "ibox-content", &block
-    		end
+	    			end 
+        		div class: "panel-body", &block
+        	end
         end
 
 		def breadcrumb(patharray)
@@ -67,13 +71,31 @@ module Weaver
 			method_missing(:p, *args, &block)
 		end
 
+		def text(theText)
+			@inner_content << theText
+		end
+
 		def link(url, title=nil)
 			if !title
 				title = url
 			end
 
-			a title, href: url
+			a href: url, target: "_blank" do
+				span do
+					text title
+					text " "
+					icon :external_link
+				end
+			end
 		end
+
+		def accordion(&block)
+			acc = Accordion.new(@anchors)
+			acc.instance_eval(&block)
+
+			@inner_content << acc.generate
+		end
+
 
 		def table_from_hashes(hashes)
 
@@ -107,7 +129,284 @@ module Weaver
 		def generate
 			@inner_content.join
 		end
+	end
 
+	class Panel < Elements
+		def initialize(anchors)
+			super(anchors)
+			@title = nil
+			@footer = nil
+			@type = :ibox
+			@tabs = nil
+			@body = true
+			@extra = nil
+		end
+
+		def generate
+			inner = super
+
+        	types =
+        	{
+        		:ibox  => 	{ outer: "ibox float-e-margins",header: "ibox-title",    body: "ibox-content" , footer: "ibox-footer"},
+        		:panel => 	{ outer: "panel panel-default", header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:primary => { outer: "panel panel-primary", header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:success => { outer: "panel panel-success", header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:info => 	{ outer: "panel panel-info",  	header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:warning => { outer: "panel panel-warning", header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:danger => 	{ outer: "panel panel-danger",  header: "panel-heading", body: "panel-body"   , footer: "panel-footer"},
+        		:blank => 	{ outer: "panel blank-panel",   header: "panel-heading", body: "panel-body"   , footer: "panel-footer"}
+        	}
+
+        	title = @title
+        	footer = @footer
+        	tabs = @tabs
+        	hasBody = @body
+        	extra = @extra
+        	classNames = types[@type]
+
+        	elem = Elements.new(@anchors)
+
+        	elem.instance_eval do
+				div class: classNames[:outer] do
+					if title or tabs
+						div class: classNames[:header] do
+							text title if title
+							text tabs.generate_tabs if tabs
+						end
+					end
+					if hasBody
+						div class: classNames[:body] do 
+							text inner
+							text tabs.generate_body if tabs
+						end
+					end
+					if extra
+						text extra
+					end
+					if footer
+						div class: classNames[:footer] do 
+							text footer
+						end
+					end
+				end
+        	end
+
+        	elem.generate
+		end
+
+		def type(aType)
+			@type = aType
+		end
+
+		def body(hasBody)
+			@body = hasBody
+		end
+
+		def title(title=nil, &block)
+			@title = title
+			if block
+				elem = Elements.new(@anchors)
+				elem.instance_eval(&block)
+				@title = elem.generate
+			end
+		end
+
+		def extra(&block)
+			if block
+				elem = Elements.new(@anchors)
+				elem.instance_eval(&block)
+				@extra = elem.generate
+			end
+		end
+
+		def footer(footer=nil, &block)
+			@footer = footer
+			if block
+				elem = Elements.new(@anchors)
+				elem.instance_eval(&block)
+				@footer = elem.generate
+			end
+		end
+
+		def tabs(&block)
+			tabs = Tabs.new(@anchors)
+			tabs.instance_eval(&block)
+
+			@tabs = tabs
+		end
+	end
+
+	class Accordion
+		def initialize(anchors)
+			@anchors = anchors
+			@tabs = {}
+			@paneltype = :panel
+
+			if !@anchors["accordia"]
+				@anchors["accordia"] = []
+			end
+
+			accArray = @anchors["accordia"]
+
+			@accordion_name = "accordion#{accArray.length}"
+			accArray << @accordion_name
+		end
+
+		def type(type)
+			@paneltype = type
+		end
+
+		def tab(title, &block)
+			
+			if !@anchors["tabs"]
+				@anchors["tabs"] = []
+			end
+
+			tabArray = @anchors["tabs"]
+
+			elem = Elements.new(@anchors)
+			elem.instance_eval(&block)
+
+			tabname = "tab#{tabArray.length}"
+			tabArray << tabname
+
+			@tabs[tabname] = 
+			{
+				title: title,
+				elem: elem
+			}
+
+		end
+
+		def generate
+			tabbar = Elements.new(@anchors)
+
+			tabs = @tabs
+			paneltype = @paneltype
+			accordion_name = @accordion_name
+
+			tabbar.instance_eval do
+
+				div :class => "panel-group", id: accordion_name do
+
+					cls = "panel-collapse collapse in"
+					tabs.each do |anchor, value|
+
+						ibox do
+							type paneltype
+							body false
+							title do
+								div :class => "panel-title" do
+									a :"data-toggle" => "collapse", :"data-parent" => "##{accordion_name}", href: "##{anchor}" do
+										if value[:title].is_a? Symbol
+											icon value[:title]
+										else
+											text value[:title]
+										end
+									end
+								end
+							end
+
+							extra do 
+								div id: anchor, :class => cls do
+									div :class => "panel-body" do
+										text value[:elem].generate
+									end
+								end
+							end
+						end
+
+						cls = "panel-collapse collapse"
+					end
+
+				end
+
+			end
+
+			tabbar.generate
+		end
+
+	end
+
+	class Tabs
+		def initialize(anchors)
+			@anchors = anchors
+			@tabs = {}
+		end
+
+		def tab(title, &block)
+			
+			if !@anchors["tabs"]
+				@anchors["tabs"] = []
+			end
+
+			tabArray = @anchors["tabs"]
+
+			elem = Elements.new(@anchors)
+			elem.instance_eval(&block)
+
+			tabname = "tab#{tabArray.length}"
+			tabArray << tabname
+
+			@tabs[tabname] = 
+			{
+				title: title,
+				elem: elem
+			}
+
+		end
+
+		def generate_body
+			tabbar = Elements.new(@anchors)
+			tabs = @tabs
+
+			tabbar.instance_eval do
+
+				div :class => "tab-content" do
+
+					cls = "tab-pane active"
+					tabs.each do |anchor, value|
+						div id: "#{anchor}", :class => cls do
+							text value[:elem].generate
+						end
+						cls = "tab-pane"
+					end
+				end
+			end
+
+			tabbar.generate
+		end
+
+		def generate_tabs
+
+			tabbar = Elements.new(@anchors)
+			tabs = @tabs
+
+			tabbar.instance_eval do
+
+				div :class => "panel-options" do
+
+					ul :class => "nav nav-tabs" do
+						cls = "active"
+						tabs.each do |anchor, value|
+							li :class => cls do
+								a :"data-toggle" => "tab", href: "##{anchor}" do
+									if value[:title].is_a? Symbol
+										icon value[:title]
+									else
+										text value[:title]
+									end
+								end
+							end
+
+							cls = ""
+						end
+					end
+				end
+			end
+
+			tabbar.generate
+		end
 	end
 
 	class Page
@@ -116,6 +415,7 @@ module Weaver
 			@title = title
 			@content = ""
 			@body_class = nil
+			@anchors = {}
 		end
 
 		def generate(back_folders, options={})
@@ -133,6 +433,9 @@ module Weaver
 			body_tag = "<body>"
 
 			body_tag = "<body class='#{@body_class}'>" if @body_class
+
+			loading_bar = ""
+			loading_bar = '<script src="js/plugins/pace/pace.min.js"></script>' if @loading_bar_visible
 
 			<<-SKELETON
 <!DOCTYPE html>
@@ -166,6 +469,7 @@ module Weaver
 
     <!-- Custom and plugin javascript -->
     <script src="#{mod}js/inspinia.js"></script>
+    #{loading_bar}
     
 
 </body>
@@ -179,16 +483,61 @@ module Weaver
 	class Row
 		attr_accessor :extra_classes
 
-		def initialize(options)
+		def initialize(anchors, options)
 			@columns = []
 			@free = 12
 			@extra_classes = options[:class] || ""
+			@anchors = anchors
+		end
+
+		def twothirds(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 8,
+				lg: 8
+			}
+			col(4, opts, &block)
+		end
+
+		def half(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 12,
+				lg: 6
+			}
+			col(4, opts, &block)
+		end
+
+		def third(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 4,
+				lg: 4
+			}
+			col(4, opts, &block)
+		end
+
+		def quarter(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 6,
+				lg: 3
+			}
+			col(3, opts, &block)
 		end
 
 
 		def col(occupies, options={}, &block)
 			raise "Not enough columns!" if @free < occupies
-			elem = Elements.new
+			elem = Elements.new(@anchors)
 			elem.instance_eval(&block)
 
 			@columns << { occupy: occupies, elem: elem, options: options }
@@ -212,20 +561,13 @@ module Weaver
 		end
 	end
 
-	class GridPage < Page
+	class SideNavPage < Page
 		def initialize(title)
 			@rows = []
-			@has_sidebar = false
-			@has_topnav = false
 			super
 		end
 
-		def sidebar_nav(&block)
-			@has_sidebar = true
-		end
-
-		def top_nav(&block)
-			@has_topnav = true
+		def nav(&block)
 		end
 
 		def header(&block)
@@ -233,7 +575,7 @@ module Weaver
 		end
 
 		def row(options={}, &block)
-			r = Row.new(options)
+			r = Row.new(@anchors, options)
 			r.instance_eval(&block)
 			@rows << r
 		end
@@ -247,67 +589,117 @@ module Weaver
 				ENDROW
 			}.join
 
-			topnav = ""
 
-			if @has_topnav
-				topnav = <<-ENDTOPNAV
-			<nav class="navbar navbar-inverse">
-			  <div class="container-fluid">
-			    <div class="navbar-header">
-			      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-			        <span class="sr-only">Toggle navigation</span>
-			        <span class="icon-bar"></span>
-			        <span class="icon-bar"></span>
-			        <span class="icon-bar"></span>
-			      </button>
-			      <a class="navbar-brand" href="#">Brand</a>
-    			</div>
-			  </div>
-			</nav>
-				ENDTOPNAV
-			end
-
-			if @has_sidebar
-				@content =
-					<<-ENDBODY
+			@loading_bar_visible = true
+			@content =
+			<<-ENDBODY
 	<div id="wrapper">
 
 		<nav class="navbar-default navbar-static-side" role="navigation">
 			<div class="sidebar-collapse">
 				<ul class="nav" id="side-menu">
+
+	                <li>
+	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
+	                </li>
+
+		            <!-- NAV -->
 				</ul>
 			</div>
 		</nav>
 		<div id="page-wrapper" class="gray-bg">
 			<div class="row border-bottom">
 		        <nav class="navbar navbar-static-top  " role="navigation" style="margin-bottom: 0">
-		        <div class="navbar-header">
-		            <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
-		        </div>
+					<div class="navbar-header">
+					    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+					</div>
 		            <ul class="nav navbar-top-links navbar-right">
-
+		                <!-- NAV RIGHT -->
 		            </ul>
 		        </nav>
 	        </div>
-#{topnav}
 #{rows}
 		</div>
 	</div>
-					ENDBODY
-			else
-				@body_class = "gray-bg"
-				@content =
-					<<-ENDBODY
-	<div class="">
-#{topnav}
-#{rows}
-	</div>
-					ENDBODY
-			end
+			ENDBODY
 
 			super
 		end
 	end
+
+	class TopNavPage < Page
+		def initialize(title)
+			@rows = []
+			super
+		end
+
+		def nav(&block)
+		end
+
+		def header(&block)
+			row(class: "wrapper border-bottom white-bg page-heading", &block)
+		end
+
+		def row(options={}, &block)
+			r = Row.new(@anchors, options)
+			r.instance_eval(&block)
+			@rows << r
+		end
+
+		def generate(level)
+			rows = @rows.map { |row|
+				<<-ENDROW
+	<div class="row #{row.extra_classes}">
+#{row.generate}
+	</div>
+				ENDROW
+			}.join
+
+			@body_class = "top-navigation"
+			@loading_bar_visible = true
+
+			@content =
+			<<-ENDBODY
+	<div id="wrapper">
+
+        <div id="page-wrapper" class="gray-bg">
+	        <div class="row border-bottom white-bg">
+
+				<nav class="navbar navbar-static-top" role="navigation">
+				    <div class="navbar-header">
+		                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+		                    <i class="fa fa-reorder"></i>
+		                </button>
+						<a href="#" class="navbar-brand">X</a>
+		            </div>
+		            <div class="navbar-collapse collapse" id="navbar">
+		                <ul class="nav navbar-nav">
+		                	<!-- NAV -->
+		                </ul>
+		                <ul class="nav navbar-top-links navbar-right">
+		                	<!-- NAV RIGHT -->
+		                </ul>
+		            </div>
+
+
+
+				</nav>
+			</div>
+
+
+	        <div class="wrapper-content">
+	            <div class="container">
+#{rows}
+	            </div>
+			</div>
+		</div>
+	</div>
+			ENDBODY
+
+			super
+		end
+	end
+
 
 	class CenterPage < Page
 		def initialize(title, element)
@@ -328,26 +720,40 @@ module Weaver
 		end
 	end
 
-	class Site
+	class Weave
 		attr_accessor :pages
-		def initialize
+		def initialize(file)
 			@pages = {}
+			@file = file
+			instance_eval(File.read(file), file)
 		end
 
 		def center_page(path, title, &block)
-			elem = Elements.new
+			elem = Elements.new({})
 			elem.instance_eval(&block) if block
 
 			p = CenterPage.new(title, elem)
 			@pages[path] = p
 		end
 
-		def grid_page(path, title, &block)
-			p = GridPage.new(title)
+		def sidenav_page(path, title, &block)
+			p = SideNavPage.new(title)
 			p.instance_eval(&block) if block
 			@pages[path] = p
 		end
 
+		def topnav_page(path, title, &block)
+			p = TopNavPage.new(title)
+			p.instance_eval(&block) if block
+			@pages[path] = p
+		end
+
+		def include(file)
+			dir = File.dirname(@file)
+			filename = File.join([dir, file])
+			File.read(filename)
+			load filename
+		end
 	end
 
 	class SiteBuilder
