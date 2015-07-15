@@ -2,152 +2,88 @@
 
 require 'weaver'
 
-Weaver::site "/Users/david/Sites/testgen" do
+class PreviewApp < Sinatra::Base
+
+	set :static, true 							# set up static file routing
+	set :public_folder, Gem.datadir("weaver")	# set up the static dir (with images/js/css inside)
+
+	def getWeavefile(viewname)
+
+		pathToFile = viewname.split("/").delete_if(&:empty?)
+
+		viewFile = nil
+
+		remainingPath = []
+
+		loop do 
+			path = "#{File.join(['source'] + pathToFile)}.weave"
+			indexPath = File.join(["source"] + pathToFile + ["index.weave"])
+
+			viewFile = path if File.exists?(path)
+			viewFile = indexPath if File.exists?(indexPath)
+
+			break if viewFile or pathToFile.length == 0
+
+			remainingPath << pathToFile.last
+
+			pathToFile = pathToFile.first pathToFile.size-1
+		end 
+
+		{ viewFile: viewFile, path: remainingPath }
+	end
+
+	get '/*' do
+		viewname = params[:splat].first
+		result = getWeavefile viewname
+		viewFile = result[:viewFile]
+		path = File.join(result[:path])
+
+		if viewFile
+			
+			site = Weaver::Site.new
+			site.instance_eval File.read(viewFile), viewFile
+
+			puts "haha '#{path}'"
+
+			p site.pages
+
+
+			if site.pages.has_key?(path)
+				site.pages[path].generate(0)
+			else
+				status 404
+			end
+		else
+			status 404
+		end
+	end
+
+end
+
+def build!
+	puts "Building site..."
+end
+
+def preview!
+	puts "Weaver Preview Mode in: #{Dir.pwd}"
+
+	PreviewApp.run!
+end
+
+if ARGV[0] == "build"
+	build!
+else
+	preview!
+end
+
+exit!
+
+Weaver::preview "/Users/david/Sites/testgen" do
 
 	center_page "", "hello" do
 		h2 "Hello!"
 		hr
 	end
 
-	grid_page "mm", "David's Resumé" do
-
-		#sidebar_nav
-		header do
-			col 12 do
-				h1 "David's Resumé"
-			end
-		end
-
-		row do
-			col 12 do
-				h2 "Basic Data"
-			end
-		end
-
-		row do
-			col 4 do
-				ibox "Photo" do
-				end
-			end
-
-			col 4 do
-				ibox do
-					table class: "table" do
-
-						thead do
-							th
-							th "Key"
-							th "Value"
-						end
-
-						tr do
-							td { icon :user }
-							td "Full Name"
-							td "SIAW David Tung Gee"
-						end
-
-						tr do
-							td { icon :github_alt }
-							td "Github"
-							td "https://github.com/davidsiaw"
-						end
-
-						tr do
-							td { icon :home }
-							td "Website"
-							td "https://davidsiaw.net"
-						end
-
-						tr do
-							td { icon :at }
-							td "Email"
-							td "davidsiaw@gmail.com"
-						end
-
-						tr do
-							td { icon :twitter }
-							td "Twitter"
-							td "@davidsiaw"
-						end
-					end
-				end
-			end
-
-		end
-
-		row do
-			col 12 do
-				h2 "Experience"
-			end
-		end
-
-		row do
-			col 4 do
-				ibox "Software Developer (2007-2013)" do
-					p "meow"
-				end
-			end
-			col 4 do
-				ibox "Lead Development Engineer (2014)" do
-					p "meow"
-				end
-			end
-			col 4 do
-				ibox "Senior Engineer (2014-2015)" do
-					p "meow"
-				end
-			end
-		end
-
-		row do
-			col 12 do
-				h2 "Education"
-			end
-		end
-
-
-
-
-		row do
-			col 3 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-			col 3 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-			col 3 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-			col 3 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-		end
-
-		row do
-			col 4 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-			col 4 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-			col 4 do
-				ibox "hello" do
-					p "meow"
-				end
-			end
-		end
-	end
 	
 end

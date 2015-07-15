@@ -1,5 +1,5 @@
 // Custom scripts
-$(document).ready(function () {
+$(document).ready( function () {
 
     // MetsiMenu
     $('#side-menu').metisMenu();

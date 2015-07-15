@@ -1,6 +1,7 @@
 require "weaver/version"
 
 require 'fileutils'
+require 'sinatra'
 
 module Weaver
 
@@ -66,7 +67,42 @@ module Weaver
 			method_missing(:p, *args, &block)
 		end
 
+		def link(url, title=nil)
+			if !title
+				title = url
+			end
 
+			a title, href: url
+		end
+
+		def table_from_hashes(hashes)
+
+			keys = {}
+			hashes.each do |hash|
+				hash.each do |key,value|
+					keys[key] = ""
+				end
+			end
+
+			table class: "table" do
+
+				thead do
+					keys.each do |key, _| 
+						th key.to_s
+					end
+				end
+
+				hashes.each do |hash|
+
+					tr do
+						keys.each do |key, _|
+							td hash[key] || "&nbsp;"
+						end
+					end
+				end
+
+			end
+		end
 
 		def generate
 			@inner_content.join
@@ -262,7 +298,7 @@ module Weaver
 				@body_class = "gray-bg"
 				@content =
 					<<-ENDBODY
-	<div class="container">
+	<div class="">
 #{topnav}
 #{rows}
 	</div>
@@ -279,7 +315,6 @@ module Weaver
 			super(title)
 		end
 
-
 		def generate(level)
 			@body_class = "gray-bg"
 			@content = <<-CONTENT
@@ -294,9 +329,9 @@ module Weaver
 	end
 
 	class Site
-		def initialize(folder)
+		attr_accessor :pages
+		def initialize
 			@pages = {}
-			@folder = folder
 		end
 
 		def center_page(path, title, &block)
@@ -304,39 +339,38 @@ module Weaver
 			elem.instance_eval(&block) if block
 
 			p = CenterPage.new(title, elem)
-
 			@pages[path] = p
 		end
 
 		def grid_page(path, title, &block)
 			p = GridPage.new(title)
 			p.instance_eval(&block) if block
-
 			@pages[path] = p
 		end
 
-		def generate
-			FileUtils::mkdir_p @folder
-			FileUtils.cp_r(Gem.datadir("weaver") + '/css', @folder + '/css')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/fonts', @folder + '/fonts')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/js', @folder + '/js')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/font-awesome', @folder + '/font-awesome')
+	end
+
+	class SiteBuilder
+
+		def initialize(pages)
+			@pages = pages
+		end
+
+
+		def build_site(folder)
+			FileUtils::mkdir_p folder
+			FileUtils.cp_r(Gem.datadir("weaver") + '/css', folder + '/css')
+			FileUtils.cp_r(Gem.datadir("weaver") + '/fonts', folder + '/fonts')
+			FileUtils.cp_r(Gem.datadir("weaver") + '/js', folder + '/js')
+			FileUtils.cp_r(Gem.datadir("weaver") + '/font-awesome', folder + '/font-awesome')
 
 			@pages.each do |path, page|
-				FileUtils::mkdir_p @folder + "/" + path
+				FileUtils::mkdir_p folder + "/" + path
 
 				level = path.split(/\//, 0).length
 
-				File.write(@folder + "/" + path + "/index.html", page.generate(level) )
+				File.write(folder + "/" + path + "/index.html", page.generate(level) )
 			end
 		end
 	end
-
-	def Weaver.site(folder, &block)
-		site = Site.new(folder)
-		site.instance_eval(&block)
-
-		site.generate
-	end
-
 end
