@@ -96,6 +96,10 @@ module Weaver
 			@inner_content << acc.generate
 		end
 
+		def widget(&block)
+			div :class => "widget style1 navy-bg", &block
+		end
+
 
 		def table_from_hashes(hashes)
 
