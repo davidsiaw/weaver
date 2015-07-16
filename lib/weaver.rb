@@ -144,6 +144,7 @@ module Weaver
 			@tabs = nil
 			@body = true
 			@extra = nil
+			@min_height = nil
 		end
 
 		def generate
@@ -167,6 +168,7 @@ module Weaver
         	hasBody = @body
         	extra = @extra
         	classNames = types[@type]
+			min_height = @min_height
 
         	elem = Elements.new(@anchors)
 
@@ -179,7 +181,7 @@ module Weaver
 						end
 					end
 					if hasBody
-						div class: classNames[:body] do 
+						div class: classNames[:body], style: "min-height: #{min_height}px" do 
 							text inner
 							text tabs.generate_body if tabs
 						end
@@ -196,6 +198,10 @@ module Weaver
         	end
 
         	elem.generate
+		end
+
+		def min_height(val)
+			@min_height = val
 		end
 
 		def type(aType)
