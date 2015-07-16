@@ -245,6 +245,7 @@ module Weaver
 			@anchors = anchors
 			@tabs = {}
 			@paneltype = :panel
+			@is_collapsed = false
 
 			if !@anchors["accordia"]
 				@anchors["accordia"] = []
@@ -254,6 +255,10 @@ module Weaver
 
 			@accordion_name = "accordion#{accArray.length}"
 			accArray << @accordion_name
+		end
+
+		def collapsed(isCollapsed)
+			@is_collapsed = isCollapsed
 		end
 
 		def type(type)
@@ -288,12 +293,14 @@ module Weaver
 			tabs = @tabs
 			paneltype = @paneltype
 			accordion_name = @accordion_name
+			is_collapsed = @is_collapsed
 
 			tabbar.instance_eval do
 
 				div :class => "panel-group", id: accordion_name do
 
 					cls = "panel-collapse collapse in"
+					cls = "panel-collapse collapse" if is_collapsed
 					tabs.each do |anchor, value|
 
 						ibox do
