@@ -578,13 +578,41 @@ module Weaver
 		end
 	end
 
-	class SideNavPage < Page
+	class Menu
+		attr_accessor :items
+		def initialize()
+			@items = []
+		end
+
+		def nav(name, icon=:question, url=nil, &block)
+			if url 
+				@items << { name: name, link: url, icon: icon }
+			end
+			if block
+				menu = Menu.new
+				menu.instance_eval(&block)
+				@items << { name: name, menu: menu, icon: icon }
+			end
+		end
+	end
+
+	class NavPage < Page
+		def initialize(title)
+			super
+			@menu = Menu.new
+		end
+
+		def menu(&block)
+			@menu.instance_eval(&block)
+		end
+
+	end
+
+
+	class SideNavPage < NavPage
 		def initialize(title)
 			@rows = []
 			super
-		end
-
-		def nav(&block)
 		end
 
 		def header(&block)
@@ -606,6 +634,51 @@ module Weaver
 				ENDROW
 			}.join
 
+			menu = @menu
+
+
+			navigation = Elements.new(@anchors)
+			navigation.instance_eval do
+
+				menu.items.each do |item|
+					li do
+						if item.has_key? :menu
+
+
+							a href:"#" do
+								icon item[:icon]
+								span :class => "nav-label" do
+									text item[:name]
+								end
+								span :class => "fa arrow" do
+									text ""
+								end
+							end
+
+            				ul :class => "nav nav-second-level" do
+            					item[:menu].items.each do |inneritem|
+            						li do
+            							if inneritem.has_key?(:menu)
+            								raise "Second level menu not supported"
+            							else
+                							a href:inneritem[:link] do
+                								text inneritem[:name]
+                							end
+            							end
+            						end
+            					end
+                    		end
+						elsif
+							a href: "#" do
+								span :class => "nav-label" do
+									text item[:name]
+								end
+							end
+						end
+					end
+				end
+
+			end
 
 			@loading_bar_visible = true
 			@content =
@@ -620,7 +693,7 @@ module Weaver
 	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
 	                </li>
 
-		            <!-- NAV -->
+		            #{navigation.generate}
 				</ul>
 			</div>
 		</nav>
@@ -644,7 +717,7 @@ module Weaver
 		end
 	end
 
-	class TopNavPage < Page
+	class TopNavPage < NavPage
 		def initialize(title)
 			@rows = []
 			super
@@ -675,6 +748,56 @@ module Weaver
 			@body_class = "top-navigation"
 			@loading_bar_visible = true
 
+			menu = @menu
+
+			navigation = Elements.new(@anchors)
+			navigation.instance_eval do
+
+				menu.items.each do |item|
+					li do
+						if item.has_key? :menu
+
+                    		li :class => "dropdown" do
+                    			a :"aria-expanded" => "false", 
+                    				role: "button", 
+                    				href: "#", 
+                    				:class => "dropdown-toggle", 
+                    				:"data-toggle" => "dropdown" do
+
+									icon item[:icon]
+                    				text item[:name]
+                    				span :class => "caret" do
+                    					text ""
+                    				end
+
+                    			end
+                				ul role: "menu", :class => "dropdown-menu" do
+                					item[:menu].items.each do |inneritem|
+                						li do
+                							if inneritem.has_key?(:menu)
+                								raise "Second level menu not supported"
+                							else
+	                							a href:inneritem[:link] do
+	                								text inneritem[:name]
+	                							end
+                							end
+                						end
+                					end
+                				end
+                    		end
+						elsif
+							a href: "#" do
+								span :class => "nav-label" do
+									icon item[:icon]
+									text item[:name]
+								end
+							end
+						end
+					end
+				end
+
+			end
+
 			@content =
 			<<-ENDBODY
 	<div id="wrapper">
@@ -691,7 +814,7 @@ module Weaver
 		            </div>
 		            <div class="navbar-collapse collapse" id="navbar">
 		                <ul class="nav navbar-nav">
-		                	<!-- NAV -->
+#{navigation.generate}
 		                </ul>
 		                <ul class="nav navbar-top-links navbar-right">
 		                	<!-- NAV RIGHT -->
