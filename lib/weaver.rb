@@ -895,28 +895,4 @@ module Weaver
 			load filename
 		end
 	end
-
-	class SiteBuilder
-
-		def initialize(pages)
-			@pages = pages
-		end
-
-
-		def build_site(folder)
-			FileUtils::mkdir_p folder
-			FileUtils.cp_r(Gem.datadir("weaver") + '/css', folder + '/css')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/fonts', folder + '/fonts')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/js', folder + '/js')
-			FileUtils.cp_r(Gem.datadir("weaver") + '/font-awesome', folder + '/font-awesome')
-
-			@pages.each do |path, page|
-				FileUtils::mkdir_p folder + "/" + path
-
-				level = path.split(/\//, 0).length
-
-				File.write(folder + "/" + path + "/index.html", page.generate(level) )
-			end
-		end
-	end
 end

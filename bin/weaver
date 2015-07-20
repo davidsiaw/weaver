@@ -2,7 +2,7 @@
 
 require 'weaver'
 
-class PreviewApp < Sinatra::Base
+class Website < Sinatra::Base
 
 	set :static, true 							# set up static file routing
 	set :public_folder, Gem.datadir("weaver")	# set up the static dir (with images/js/css inside)
@@ -32,6 +32,8 @@ class PreviewApp < Sinatra::Base
 		{ viewFile: viewFile, path: remainingPath }
 	end
 
+
+
 	get '/*' do
 		viewname = params[:splat].first
 		result = getWeavefile viewname
@@ -59,12 +61,35 @@ end
 
 def build!
 	puts "Building site..."
+
+	buildDir = "#{Dir.pwd}/build" 
+	FileUtils::rm_rf buildDir
+	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
+
+	files = Dir["source/**/*.weave"]
+	files.each do |file|
+		baseDir = file.chomp('.weave').chomp('index').sub(/^source\//, "")
+
+		site = Weaver::Weave.new(file)
+
+		site.pages.each do |localPath, page|
+			resultPath = File.join(baseDir, localPath)
+
+			level = resultPath.split(/\//, 0).length
+			puts "Writing: #{file} -> #{resultPath} (Level: #{level})"
+
+			fileName = File.join([buildDir, resultPath, "index.html"])
+			FileUtils::mkdir_p File.dirname(fileName)
+			File.write(fileName, page.generate(level))
+		end
+	end
+
 end
 
 def preview!
 	puts "Weaver Preview Mode in: #{Dir.pwd}"
 
-	PreviewApp.run!
+	Website.run!
 end
 
 if ARGV[0] == "build"
