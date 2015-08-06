@@ -35,6 +35,11 @@ class Website < Sinatra::Base
 
 
 	get '/*' do
+
+		if params[:splat].first.start_with? "images/"
+			return send_file(params[:splat].first, :disposition => 'inline')
+		end
+
 		viewname = params[:splat].first
 		result = getWeavefile viewname
 		viewFile = result[:viewFile]
@@ -65,6 +70,7 @@ def build!
 	buildDir = "#{Dir.pwd}/build" 
 	FileUtils::rm_rf buildDir
 	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
+	FileUtils.cp_r("images", buildDir)
 
 	files = Dir["source/**/*.weave"]
 	files.each do |file|

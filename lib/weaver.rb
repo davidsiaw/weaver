@@ -25,7 +25,11 @@ module Weaver
 			end
 
 			if !inner
-				tag = "<#{name} />"
+
+				options = args[0] || []
+				opts = options.map { |key,value| "#{key}=\"#{value}\"" }.join " "
+
+				tag = "<#{name} #{opts} />"
 			elsif args.length == 0
 				tag = "<#{name}>#{inner}</#{name}>"
 			elsif args.length == 1 and args[0].is_a? Hash
@@ -57,6 +61,17 @@ module Weaver
 	    			end 
         		div class: "panel-body", &block
         	end
+        end
+
+        def image(name, options={})
+        	img class: "img-responsive #{options[:class]}", src: "/images/#{name}"
+        end
+
+        def crossfade_image(image_normal, image_hover)
+			div class: "crossfade" do
+				image image_hover, class: "bottom"
+				image image_normal, class: "top"
+			end
         end
 
 		def breadcrumb(patharray)
@@ -100,6 +115,16 @@ module Weaver
 			div :class => "widget style1 navy-bg", &block
 		end
 
+		def row(options={}, &block)
+			r = Row.new(@anchors, options)
+			r.instance_eval(&block)
+
+			@inner_content << <<-ENDROW
+	<div class="row">
+		#{r.generate}
+	</div>
+ENDROW
+		end
 
 		def table_from_hashes(hashes)
 
