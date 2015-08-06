@@ -111,8 +111,19 @@ module Weaver
 			@inner_content << acc.generate
 		end
 
-		def widget(&block)
-			div :class => "widget style1 navy-bg", &block
+		def widget(options={}, &block)
+			#gray-bg
+			#white-bg
+			#navy-bg
+			#blue-bg
+			#lazur-bg
+			#yellow-bg
+			#red-bg
+			#black-bg
+
+			color = "#{options[:color]}-bg" || "navy-bg"
+
+			div :class => "widget style1 #{color}", &block
 		end
 
 		def row(options={}, &block)
@@ -124,6 +135,122 @@ module Weaver
 		#{r.generate}
 	</div>
 ENDROW
+		end
+
+		def jumbotron(&block)
+			div :class => "jumbotron", &block
+		end
+
+		def _button(options={})
+
+			anIcon = options[:icon]
+			title = options[:title]
+
+			if title.is_a? Hash
+				options.merge! title
+				title = anIcon
+				anIcon = nil
+
+			end
+
+			style = options[:style] || :primary
+			size = "btn-#{options[:size]}" if options[:size]
+			block = "btn-block" if options[:block]
+			outline = "btn-outline" if options[:outline]
+			dim = "dim" if options[:threedee]
+			dim = "dim btn-large-dim" if options[:bigthreedee]
+			dim = "btn-rounded" if options[:rounded]
+			dim = "btn-circle" if options[:circle]
+
+			buttonOptions = {
+				:type => "button",
+				:class => "btn btn-#{style} #{size} #{block} #{outline} #{dim}"
+			}
+
+			type = :button
+
+			buttonOptions[:"data-toggle"] = "button" if options[:toggle]
+			type = :a if options[:toggle]
+
+
+			method_missing type, buttonOptions do
+				if title.is_a? Symbol
+					icon title
+				else
+					icon anIcon if anIcon
+					text " " if anIcon
+					text title
+				end
+			end
+		end
+
+		def button(anIcon, title, options={})
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def block_button(anIcon, title, options={})
+			options[:block] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def outline_button(anIcon, title, options={})
+			options[:outline] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def big_button(anIcon, title, options={})
+			options[:size] = :lg
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def small_button(anIcon, title, options={})
+			options[:size] = :sm
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def tiny_button(anIcon, title, options={})
+			options[:size] = :xs
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def embossed_button(anIcon, title, options={})
+			options[:threedee] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def big_embossed_button(anIcon, title, options={})
+			options[:bigthreedee] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def rounded_button(anIcon, title, options={})
+			options[:rounded] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
+		end
+
+		def circle_button(anIcon, title, options={})
+			options[:circle] = true
+			options[:icon] = anIcon
+			options[:title] = title
+			_button(options)
 		end
 
 		def table_from_hashes(hashes)
