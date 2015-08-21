@@ -842,7 +842,7 @@ ENDROW
 				<ul class="nav" id="side-menu">
 
 	                <li>
-	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
+	                    <a href="/"><i class="fa fa-home"></i> <span class="nav-label"><i class="fa fa-home"></i></span> <span class="label label-primary pull-right"></span></a>
 	                </li>
 
 		            #{navigation.generate}
@@ -962,7 +962,7 @@ ENDROW
 		                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
 		                    <i class="fa fa-reorder"></i>
 		                </button>
-						<a href="#" class="navbar-brand">X</a>
+						<a href="/" class="navbar-brand"><i class="fa fa-home"></i></a>
 		            </div>
 		            <div class="navbar-collapse collapse" id="navbar">
 		                <ul class="nav navbar-nav">
