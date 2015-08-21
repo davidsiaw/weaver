@@ -64,7 +64,16 @@ module Weaver
         end
 
         def image(name, options={})
-        	img class: "img-responsive #{options[:class]}", src: "/images/#{name}"
+
+        	style = ""
+        	if options[:rounded_corners] == true
+        		style += " border-radius: 8px"
+        	else
+        		style += " border-radius: #{options[:rounded_corners]}px"
+
+        	end
+
+        	img class: "img-responsive #{options[:class]}", src: "/images/#{name}", style: style
         end
 
         def crossfade_image(image_normal, image_hover)
@@ -137,8 +146,27 @@ module Weaver
 ENDROW
 		end
 
-		def jumbotron(&block)
-			div :class => "jumbotron", &block
+		def jumbotron(options={}, &block)
+
+			additional_style = ""
+
+			if options[:background]
+				additional_style += " background-image: url('/images/#{options[:background]}'); background-position: center center; background-size: cover;"
+			end
+
+			if options[:height]
+				additional_style += " height: #{options[:height]}px;"
+			end
+
+			if options[:min_height]
+				additional_style += " min-height: #{options[:min_height]}px;"
+			end
+
+			if options[:max_height]
+				additional_style += " max-height: #{options[:max_height]}px;"
+			end
+
+			div :class => "jumbotron", style: additional_style, &block
 		end
 
 		def _button(options={})
@@ -771,6 +799,11 @@ ENDROW
 			row(class: "wrapper border-bottom white-bg page-heading", &block)
 		end
 
+		def brand(text, link="/")
+			@brand = text
+			@brand_link = link
+		end
+
 		def row(options={}, &block)
 			r = Row.new(@anchors, options)
 			r.instance_eval(&block)
@@ -832,6 +865,17 @@ ENDROW
 
 			end
 
+			brand_content = "" 
+
+			if @brand
+				brand_content = <<-BRAND_CONTENT
+
+	                <li>
+	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
+	                </li>
+				BRAND_CONTENT
+			end
+
 			@loading_bar_visible = true
 			@content =
 			<<-ENDBODY
@@ -841,11 +885,9 @@ ENDROW
 			<div class="sidebar-collapse">
 				<ul class="nav" id="side-menu">
 
-	                <li>
-	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
-	                </li>
+#{brand_content}
+#{navigation.generate}
 
-		            #{navigation.generate}
 				</ul>
 			</div>
 		</nav>
@@ -875,11 +917,13 @@ ENDROW
 			super
 		end
 
-		def nav(&block)
-		end
-
 		def header(&block)
 			row(class: "wrapper border-bottom white-bg page-heading", &block)
+		end
+
+		def brand(text, link="/")
+			@brand = text
+			@brand_link = link
 		end
 
 		def row(options={}, &block)
@@ -938,7 +982,7 @@ ENDROW
                 				end
                     		end
 						elsif
-							a href: "#" do
+							a href: "#{item[:link]}" do
 								span :class => "nav-label" do
 									icon item[:icon]
 									text item[:name]
@@ -950,6 +994,18 @@ ENDROW
 
 			end
 
+			brand_content = "" 
+
+			if @brand
+				brand_content = <<-BRAND_CONTENT
+
+				    <div class="navbar-header">
+
+						<a href="#" class="navbar-brand">X</a>
+		            </div>
+				BRAND_CONTENT
+			end
+
 			@content =
 			<<-ENDBODY
 	<div id="wrapper">
@@ -958,12 +1014,11 @@ ENDROW
 	        <div class="row border-bottom white-bg">
 
 				<nav class="navbar navbar-static-top" role="navigation">
-				    <div class="navbar-header">
-		                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
-		                    <i class="fa fa-reorder"></i>
-		                </button>
-						<a href="#" class="navbar-brand">X</a>
-		            </div>
+	                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+	                    <i class="fa fa-reorder"></i>
+	                </button>
+#{brand_content}
+
 		            <div class="navbar-collapse collapse" id="navbar">
 		                <ul class="nav navbar-nav">
 #{navigation.generate}
