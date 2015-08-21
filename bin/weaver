@@ -70,7 +70,9 @@ def build!
 	buildDir = "#{Dir.pwd}/build" 
 	FileUtils::rm_rf buildDir
 	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
-	FileUtils.cp_r("images", buildDir)
+	if Dir.exist? "images"
+		FileUtils.cp_r("images", buildDir)
+	end
 
 	files = Dir["source/**/*.weave"]
 	files.each do |file|
