@@ -68,6 +68,8 @@ module Weaver
         	style = ""
         	if options[:rounded_corners] == true
         		style += " border-radius: 8px"
+        	elsif options[:rounded_corners] == :top
+        		style += " border-radius: 8px 8px 0px 0px"
         	else
         		style += " border-radius: #{options[:rounded_corners]}px"
 

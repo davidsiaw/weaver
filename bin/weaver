@@ -43,7 +43,7 @@ class Website < Sinatra::Base
 		viewname = params[:splat].first
 		result = getWeavefile viewname
 		viewFile = result[:viewFile]
-		path = File.join(result[:path])
+		path = File.join(result[:path].reverse)
 
 		if viewFile
 
