@@ -43,7 +43,7 @@ class Website < Sinatra::Base
 		viewname = params[:splat].first
 		result = getWeavefile viewname
 		viewFile = result[:viewFile]
-		path = File.join(result[:path])
+		path = File.join(result[:path].reverse)
 
 		if viewFile
 
@@ -55,9 +55,13 @@ class Website < Sinatra::Base
 				site.pages[path].generate(level)
 
 			else
+				puts "Not found: #{viewname} in #{viewFile}"
+				puts "Path is: #{path}"
 				status 404
 			end
 		else
+			puts "Not found: #{viewname} in #{viewFile}"
+				puts "Path is: #{path}"
 			status 404
 		end
 	end
