@@ -7,9 +7,10 @@ module Weaver
 
 	class Elements
 
-		def initialize(anchors)
+		def initialize(page, anchors)
 			@inner_content = []
 			@anchors = anchors
+			@page = page
 		end
 
 		def method_missing(name, *args, &block)
@@ -19,7 +20,7 @@ module Weaver
 				inner = args.shift
 			end
 			if block
-				elem = Elements.new(@anchors)
+				elem = Elements.new(@page, @anchors)
 				elem.instance_eval(&block)
 				inner = elem.generate
 			end
@@ -49,7 +50,7 @@ module Weaver
 		end
 
         def ibox(&block)
-        	panel = Panel.new(@anchors)
+        	panel = Panel.new(@page, @anchors)
         	panel.instance_eval(&block)
         	@inner_content << panel.generate
         end
@@ -75,7 +76,7 @@ module Weaver
 
         	end
 
-        	img class: "img-responsive #{options[:class]}", src: "/images/#{name}", style: style
+        	img class: "img-responsive #{options[:class]}", src: "#{@page.root}images/#{name}", style: style
         end
 
         def crossfade_image(image_normal, image_hover)
@@ -101,18 +102,40 @@ module Weaver
 			@inner_content << theText
 		end
 
-		def link(url, title=nil)
+		def link(url, title=nil, &block)
 			if !title
 				title = url
 			end
 
-			a href: url, target: "_blank" do
-				span do
-					text title
-					text " "
-					icon :external_link
+			if url.start_with? "/"
+				url.sub!(/^\//, @page.root)
+				if block
+					a href: url, &block
+				else
+					a title, href: url
+				end
+			else
+
+				if block
+					a href: url, target: "_blank" do
+						span do
+							span &block
+							icon :external_link
+						end
+					end
+				else
+					a href: url, target: "_blank" do
+						span do
+							text title
+							text " "
+							icon :external_link
+						end
+					end
 				end
 			end
+
+			
+
 		end
 
 		def accordion(&block)
@@ -138,7 +161,7 @@ module Weaver
 		end
 
 		def row(options={}, &block)
-			r = Row.new(@anchors, options)
+			r = Row.new(@page, @anchors, options)
 			r.instance_eval(&block)
 
 			@inner_content << <<-ENDROW
@@ -153,7 +176,7 @@ ENDROW
 			additional_style = ""
 
 			if options[:background]
-				additional_style += " background-image: url('/images/#{options[:background]}'); background-position: center center; background-size: cover;"
+				additional_style += " background-image: url('#{@page.root}images/#{options[:background]}'); background-position: center center; background-size: cover;"
 			end
 
 			if options[:height]
@@ -318,8 +341,8 @@ ENDROW
 	end
 
 	class Panel < Elements
-		def initialize(anchors)
-			super(anchors)
+		def initialize(page, anchors)
+			super
 			@title = nil
 			@footer = nil
 			@type = :ibox
@@ -327,6 +350,7 @@ ENDROW
 			@body = true
 			@extra = nil
 			@min_height = nil
+			@page = page
 		end
 
 		def generate
@@ -352,7 +376,7 @@ ENDROW
         	classNames = types[@type]
 			min_height = @min_height
 
-        	elem = Elements.new(@anchors)
+        	elem = Elements.new(@page, @anchors)
 
         	elem.instance_eval do
 				div class: classNames[:outer] do
@@ -397,7 +421,7 @@ ENDROW
 		def title(title=nil, &block)
 			@title = title
 			if block
-				elem = Elements.new(@anchors)
+				elem = Elements.new(@page, @anchors)
 				elem.instance_eval(&block)
 				@title = elem.generate
 			end
@@ -405,7 +429,7 @@ ENDROW
 
 		def extra(&block)
 			if block
-				elem = Elements.new(@anchors)
+				elem = Elements.new(@page, @anchors)
 				elem.instance_eval(&block)
 				@extra = elem.generate
 			end
@@ -414,14 +438,14 @@ ENDROW
 		def footer(footer=nil, &block)
 			@footer = footer
 			if block
-				elem = Elements.new(@anchors)
+				elem = Elements.new(@page, @anchors)
 				elem.instance_eval(&block)
 				@footer = elem.generate
 			end
 		end
 
 		def tabs(&block)
-			tabs = Tabs.new(@anchors)
+			tabs = Tabs.new(@page, @anchors)
 			tabs.instance_eval(&block)
 
 			@tabs = tabs
@@ -429,11 +453,12 @@ ENDROW
 	end
 
 	class Accordion
-		def initialize(anchors)
+		def initialize(page, anchors)
 			@anchors = anchors
 			@tabs = {}
 			@paneltype = :panel
 			@is_collapsed = false
+			@page = page
 
 			if !@anchors["accordia"]
 				@anchors["accordia"] = []
@@ -461,7 +486,7 @@ ENDROW
 
 			tabArray = @anchors["tabs"]
 
-			elem = Elements.new(@anchors)
+			elem = Elements.new(@page, @anchors)
 			elem.instance_eval(&block)
 
 			tabname = "tab#{tabArray.length}"
@@ -476,7 +501,7 @@ ENDROW
 		end
 
 		def generate
-			tabbar = Elements.new(@anchors)
+			tabbar = Elements.new(@page, @anchors)
 
 			tabs = @tabs
 			paneltype = @paneltype
@@ -528,9 +553,10 @@ ENDROW
 	end
 
 	class Tabs
-		def initialize(anchors)
+		def initialize(page, anchors)
 			@anchors = anchors
 			@tabs = {}
+			@page = page
 		end
 
 		def tab(title, &block)
@@ -541,7 +567,7 @@ ENDROW
 
 			tabArray = @anchors["tabs"]
 
-			elem = Elements.new(@anchors)
+			elem = Elements.new(@page, @anchors)
 			elem.instance_eval(&block)
 
 			tabname = "tab#{tabArray.length}"
@@ -556,7 +582,7 @@ ENDROW
 		end
 
 		def generate_body
-			tabbar = Elements.new(@anchors)
+			tabbar = Elements.new(@page, @anchors)
 			tabs = @tabs
 
 			tabbar.instance_eval do
@@ -578,7 +604,7 @@ ENDROW
 
 		def generate_tabs
 
-			tabbar = Elements.new(@anchors)
+			tabbar = Elements.new(@page, @anchors)
 			tabs = @tabs
 
 			tabbar.instance_eval do
@@ -610,11 +636,16 @@ ENDROW
 
 	class Page
 
-		def initialize(title)
+		def initialize(title, options)
 			@title = title
 			@content = ""
 			@body_class = nil
 			@anchors = {}
+			@options = options
+		end
+
+		def root
+			return @options[:root]
 		end
 
 		def generate(back_folders, options={})
@@ -682,11 +713,12 @@ ENDROW
 	class Row
 		attr_accessor :extra_classes
 
-		def initialize(anchors, options)
+		def initialize(page, anchors, options)
 			@columns = []
 			@free = 12
 			@extra_classes = options[:class] || ""
 			@anchors = anchors
+			@page = page
 		end
 
 		def twothirds(&block)
@@ -736,7 +768,7 @@ ENDROW
 
 		def col(occupies, options={}, &block)
 			raise "Not enough columns!" if @free < occupies
-			elem = Elements.new(@anchors)
+			elem = Elements.new(@page, @anchors)
 			elem.instance_eval(&block)
 
 			@columns << { occupy: occupies, elem: elem, options: options }
@@ -779,7 +811,7 @@ ENDROW
 	end
 
 	class NavPage < Page
-		def initialize(title)
+		def initialize(title, options)
 			super
 			@menu = Menu.new
 		end
@@ -792,7 +824,7 @@ ENDROW
 
 
 	class SideNavPage < NavPage
-		def initialize(title)
+		def initialize(title, options)
 			@rows = []
 			super
 		end
@@ -807,7 +839,7 @@ ENDROW
 		end
 
 		def row(options={}, &block)
-			r = Row.new(@anchors, options)
+			r = Row.new(self, @anchors, options)
 			r.instance_eval(&block)
 			@rows << r
 		end
@@ -823,8 +855,7 @@ ENDROW
 
 			menu = @menu
 
-
-			navigation = Elements.new(@anchors)
+			navigation = Elements.new(@page, @anchors)
 			navigation.instance_eval do
 
 				menu.items.each do |item|
@@ -848,9 +879,7 @@ ENDROW
             							if inneritem.has_key?(:menu)
             								raise "Second level menu not supported"
             							else
-                							a href:inneritem[:link] do
-                								text inneritem[:name]
-                							end
+                							link inneritem[:name], href:inneritem[:link]
             							end
             						end
             					end
@@ -914,7 +943,7 @@ ENDROW
 	end
 
 	class TopNavPage < NavPage
-		def initialize(title)
+		def initialize(title, options)
 			@rows = []
 			super
 		end
@@ -929,7 +958,7 @@ ENDROW
 		end
 
 		def row(options={}, &block)
-			r = Row.new(@anchors, options)
+			r = Row.new(self, @anchors, options)
 			r.instance_eval(&block)
 			@rows << r
 		end
@@ -948,7 +977,7 @@ ENDROW
 
 			menu = @menu
 
-			navigation = Elements.new(@anchors)
+			navigation = Elements.new(self, @anchors)
 			navigation.instance_eval do
 
 				menu.items.each do |item|
@@ -975,16 +1004,14 @@ ENDROW
                 							if inneritem.has_key?(:menu)
                 								raise "Second level menu not supported"
                 							else
-	                							a href:inneritem[:link] do
-	                								text inneritem[:name]
-	                							end
+	                							link inneritem[:name], href:inneritem[:link]
                 							end
                 						end
                 					end
                 				end
                     		end
 						elsif
-							a href: "#{item[:link]}" do
+							link "#{item[:link]}" do
 								span :class => "nav-label" do
 									icon item[:icon]
 									text item[:name]
@@ -1051,9 +1078,13 @@ ENDROW
 
 
 	class CenterPage < Page
-		def initialize(title, element)
-			@element = element
-			super(title)
+		def initialize(title, options)
+			@element = Elements.new(self, {})
+			super
+		end
+
+		def element=(value)
+			@element = value
 		end
 
 		def generate(level)
@@ -1071,28 +1102,36 @@ ENDROW
 
 	class Weave
 		attr_accessor :pages
-		def initialize(file)
+		def initialize(file, options={})
 			@pages = {}
 			@file = file
+			@options = options
+
+			@options[:root] = @options[:root] || "/"
+			@options[:root] = "#{@options[:root]}/" unless @options[:root].end_with? "/"
 			instance_eval(File.read(file), file)
 		end
 
 		def center_page(path, title, &block)
-			elem = Elements.new({})
+
+			p = CenterPage.new(title, @options)
+
+			elem = Elements.new(p, {})
 			elem.instance_eval(&block) if block
 
-			p = CenterPage.new(title, elem)
+			p.element=elem
+
 			@pages[path] = p
 		end
 
 		def sidenav_page(path, title, &block)
-			p = SideNavPage.new(title)
+			p = SideNavPage.new(title, @options)
 			p.instance_eval(&block) if block
 			@pages[path] = p
 		end
 
 		def topnav_page(path, title, &block)
-			p = TopNavPage.new(title)
+			p = TopNavPage.new(title, @options)
 			p.instance_eval(&block) if block
 			@pages[path] = p
 		end

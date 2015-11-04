@@ -1,6 +1,7 @@
 #!/usr/bin/exec ruby
 
 require 'weaver'
+require 'trollop'
 
 class Website < Sinatra::Base
 
@@ -68,7 +69,20 @@ class Website < Sinatra::Base
 
 end
 
-def build!
+def build!(args)
+
+	opts = Trollop::options do
+		banner <<-EOS
+Generate website
+
+Usage:
+   weaver build [options]
+where [options] are:
+		EOS
+
+		opt :root, "The root URL to be used in links (e.g.) https://astrobunny.net", type: :string, default: "/"
+	end
+
 	puts "Building site..."
 
 	buildDir = "#{Dir.pwd}/build" 
@@ -82,7 +96,7 @@ def build!
 	files.each do |file|
 		baseDir = file.chomp('.weave').chomp('index').sub(/^source\//, "")
 
-		site = Weaver::Weave.new(file)
+		site = Weaver::Weave.new(file, opts)
 
 		site.pages.each do |localPath, page|
 			resultPath = File.join(baseDir, localPath)
@@ -104,8 +118,9 @@ def preview!
 	Website.run!
 end
 
-if ARGV[0] == "build"
-	build!
+command = ARGV.shift
+if command == "build"
+	build!(ARGV)
 else
 	preview!
 end
