@@ -118,9 +118,49 @@ def preview!
 	Website.run!
 end
 
+def create!(args)
+
+	if args.length != 1
+		puts "Usage: weaver create <folder>"
+		return
+	end
+
+	gemfile = <<-GEMFILE
+source 'https://rubygems.org'
+
+gem 'weaver', '~> #{Weaver::VERSION}'
+	GEMFILE
+
+	source = <<-SOURCE
+topnav_page "", "My first weaver page" do
+	header do
+		col 12 do
+			h1 "Main page"
+
+		end
+	end
+
+	row do
+		col 12 do
+			h2 "Examples"
+			p "Some content"
+		end
+	end
+end
+	SOURCE
+
+	to_create = "#{args[0]}"
+	FileUtils::mkdir_p "#{to_create}"
+	FileUtils::mkdir_p "#{to_create}/source"
+	File.write "#{to_create}/Gemfile", gemfile
+	File.write "#{to_create}/source/index.weave", source
+end
+
 command = ARGV.shift
 if command == "build"
 	build!(ARGV)
+elsif command == "create"
+	create!(ARGV)
 else
 	preview!
 end
