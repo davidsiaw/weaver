@@ -681,6 +681,7 @@ ENDROW
     <link href="#{mod}css/bootstrap.min.css" rel="stylesheet">
     <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
+    <link href="css/plugins/blueimp/css/blueimp-gallery.min.css" rel="stylesheet">
     #{style}
     <link href="#{mod}css/animate.css" rel="stylesheet">
     
@@ -697,9 +698,36 @@ ENDROW
     <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
 
+    <!-- blueimp gallery -->
+    <script src="js/plugins/blueimp/jquery.blueimp-gallery.min.js"></script>
+
+    <style>
+        /* Local style for demo purpose */
+
+        .lightBoxGallery {
+            text-align: center;
+        }
+
+        .lightBoxGallery img {
+            margin: 5px;
+        }
+
+    </style>
+
+
     <!-- Custom and plugin javascript -->
     <script src="#{mod}js/inspinia.js"></script>
     #{loading_bar}
+
+    <div id="blueimp-gallery" class="blueimp-gallery">
+                                <div class="slides"></div>
+                                <h3 class="title"></h3>
+                                <a class="prev">‹</a>
+                                <a class="next">›</a>
+                                <a class="close">×</a>
+                                <a class="play-pause"></a>
+                                <ol class="indicator"></ol>
+                            </div>
     
 
 </body>
