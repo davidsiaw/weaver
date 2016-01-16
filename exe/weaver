@@ -20,6 +20,9 @@ class Website < Sinatra::Base
 			path = "#{File.join(['source'] + pathToFile)}.weave"
 			indexPath = File.join(["source"] + pathToFile + ["index.weave"])
 
+			#puts path
+			#puts indexPath
+
 			viewFile = path if File.exists?(path)
 			viewFile = indexPath if File.exists?(indexPath)
 
@@ -32,8 +35,6 @@ class Website < Sinatra::Base
 
 		{ viewFile: viewFile, path: remainingPath }
 	end
-
-
 
 	get '/*' do
 

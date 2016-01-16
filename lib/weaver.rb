@@ -2,6 +2,7 @@ require "weaver/version"
 
 require 'fileutils'
 require 'sinatra'
+require 'json'
 
 module Weaver
 
@@ -49,8 +50,8 @@ module Weaver
 			end
 		end
 
-        def ibox(&block)
-        	panel = Panel.new(@page, @anchors)
+        def ibox(options={}, &block)
+        	panel = Panel.new(@page, @anchors, options)
         	panel.instance_eval(&block)
         	@inner_content << panel.generate
         end
@@ -63,6 +64,22 @@ module Weaver
         		div class: "panel-body", &block
         	end
         end
+
+		def tabs(&block)
+			tabs = Tabs.new(@page, @anchors)
+			tabs.instance_eval(&block)
+
+        	@inner_content << tabs.generate
+		end
+
+		def syntax(lang=:javascript, &block)
+			code = Code.new(@page, @anchors, lang)
+			code.instance_eval(&block)
+
+			@inner_content << code.generate
+
+			@page.scripts << code.generate_script
+		end
 
         def image(name, options={})
 
@@ -84,6 +101,8 @@ module Weaver
 				image image_hover, class: "bottom"
 				image image_normal, class: "top"
 			end
+			image image_hover
+			@page.request_css "css/crossfade_style.css"
         end
 
 		def breadcrumb(patharray)
@@ -139,7 +158,7 @@ module Weaver
 		end
 
 		def accordion(&block)
-			acc = Accordion.new(@anchors)
+			acc = Accordion.new(@page, @anchors)
 			acc.instance_eval(&block)
 
 			@inner_content << acc.generate
@@ -340,17 +359,103 @@ ENDROW
 		end
 	end
 
+	class Code
+		def initialize(page, anchors, lang)
+			@page = page
+			@anchors = anchors
+			@content = ""
+			@options = {}
+
+			codeArray = @anchors["code"]
+
+			if !@anchors["code"]
+				@anchors["code"] = []
+			end
+
+			codeArray = @anchors["code"]
+
+			@codeName = "code#{codeArray.length}"
+			codeArray << @accordion_name
+
+			@page.request_css "css/plugins/codemirror/codemirror.css"
+			@page.request_js "js/plugins/codemirror/codemirror.js"
+
+			language lang
+
+		end
+
+		def language(lang)
+			# TODO improve langmap
+			langmap = {
+				javascript: {mime: "text/javascript", file: "javascript/javascript"}
+			}
+
+			if langmap[lang]
+				@options[:mode] = langmap[lang][:mime]
+				@page.request_js "js/plugins/codemirror/mode/#{langmap[lang][:file]}.js"
+			else
+				@options[:mode] = "text/x-#{lang}"
+				@page.request_js "js/plugins/codemirror/mode/#{lang}/#{lang}.js"
+			end
+
+		end
+
+		def content(text)
+			@content = text
+		end
+
+		def theme(name)
+			@options[:theme] = name
+
+			@page.request_css "css/plugins/codemirror/#{name}.css"
+		end
+
+		def generate_script
+
+			@options[:lineNumbers] ||= true
+			@options[:matchBrackets] ||= true
+			@options[:styleActiveLine] ||= true
+			@options[:mode] ||= "javascript"
+			@options[:readOnly] ||= true
+
+			<<-CODESCRIPT
+		$(document).ready(function()
+		{
+			CodeMirror.fromTextArea(document.getElementById("#{@codeName}"), 
+				JSON.parse('#{@options.to_json}')
+			);
+	    });
+	        CODESCRIPT
+		end
+
+		def generate
+
+			content = @content
+			codeName = @codeName
+
+        	elem = Elements.new(@page, @anchors)
+
+        	elem.instance_eval do
+				textarea id: codeName do
+					text content
+				end
+        	end
+
+        	elem.generate
+		end
+	end
+
 	class Panel < Elements
-		def initialize(page, anchors)
-			super
+		def initialize(page, anchors, options)
+			super(page, anchors)
 			@title = nil
 			@footer = nil
 			@type = :ibox
-			@tabs = nil
 			@body = true
 			@extra = nil
 			@min_height = nil
 			@page = page
+			@options = options
 		end
 
 		def generate
@@ -370,26 +475,48 @@ ENDROW
 
         	title = @title
         	footer = @footer
-        	tabs = @tabs
         	hasBody = @body
         	extra = @extra
+        	options = @options
         	classNames = types[@type]
 			min_height = @min_height
 
         	elem = Elements.new(@page, @anchors)
 
+        	outer_class = classNames[:outer]
+
+        	if options[:collapsed]
+        		outer_class = "ibox collapsed"
+        	end
+
         	elem.instance_eval do
-				div class: classNames[:outer] do
-					if title or tabs
+				div class: outer_class do
+					if title
 						div class: classNames[:header] do
-							text title if title
-							text tabs.generate_tabs if tabs
+							h5 title
+
+							div class: "ibox-tools" do
+								if options[:collapsible] or options[:collapsed]
+									a class: "collapse-link" do
+										icon :"chevron-up"
+									end
+								end
+								if options[:expandable]
+									a class: "fullscreen-link" do
+										icon :expand
+									end
+								end
+								if options[:closable]
+									a class: "close-link" do
+										icon :times
+									end
+								end
+							end
 						end
 					end
 					if hasBody
 						div class: classNames[:body], style: "min-height: #{min_height}px" do 
 							text inner
-							text tabs.generate_body if tabs
 						end
 					end
 					if extra
@@ -400,6 +527,7 @@ ENDROW
 							text footer
 						end
 					end
+
 				end
         	end
 
@@ -444,12 +572,6 @@ ENDROW
 			end
 		end
 
-		def tabs(&block)
-			tabs = Tabs.new(@page, @anchors)
-			tabs.instance_eval(&block)
-
-			@tabs = tabs
-		end
 	end
 
 	class Accordion
@@ -557,6 +679,7 @@ ENDROW
 			@anchors = anchors
 			@tabs = {}
 			@page = page
+			@orientation = :normal # :left, :right
 		end
 
 		def tab(title, &block)
@@ -578,55 +701,55 @@ ENDROW
 				title: title,
 				elem: elem
 			}
-
 		end
 
-		def generate_body
-			tabbar = Elements.new(@page, @anchors)
-			tabs = @tabs
-
-			tabbar.instance_eval do
-
-				div :class => "tab-content" do
-
-					cls = "tab-pane active"
-					tabs.each do |anchor, value|
-						div id: "#{anchor}", :class => cls do
-							text value[:elem].generate
-						end
-						cls = "tab-pane"
-					end
-				end
-			end
-
-			tabbar.generate
+		def orientation(direction)
+			@orientation = direction
 		end
 
-		def generate_tabs
+		def generate
 
 			tabbar = Elements.new(@page, @anchors)
 			tabs = @tabs
+			orientation = @orientation
 
 			tabbar.instance_eval do
 
-				div :class => "panel-options" do
+				div :class => "tabs-container" do
 
-					ul :class => "nav nav-tabs" do
-						cls = "active"
-						tabs.each do |anchor, value|
-							li :class => cls do
-								a :"data-toggle" => "tab", href: "##{anchor}" do
-									if value[:title].is_a? Symbol
-										icon value[:title]
-									else
-										text value[:title]
+					div :class => "tabs-#{orientation}" do
+
+						ul :class => "nav nav-tabs" do
+							cls = "active"
+							tabs.each do |anchor, value|
+								li :class => cls do
+									a :"data-toggle" => "tab", href: "##{anchor}" do
+										if value[:title].is_a? Symbol
+											icon value[:title]
+										else
+											text value[:title]
+										end
 									end
 								end
-							end
 
-							cls = ""
+								cls = ""
+							end
+						end
+
+						div :class => "tab-content" do
+
+							cls = "tab-pane active"
+							tabs.each do |anchor, value|
+								div id: "#{anchor}", :class => cls do
+									div :class => "panel-body" do
+										text value[:elem].generate
+									end
+								end
+								cls = "tab-pane"
+							end
 						end
 					end
+
 				end
 			end
 
@@ -636,19 +759,43 @@ ENDROW
 
 	class Page
 
+		attr_accessor :scripts
+
 		def initialize(title, options)
 			@title = title
 			@content = ""
 			@body_class = nil
 			@anchors = {}
 			@options = options
+			@scripts = []
+			@top_content = ""
+
+			@requested_scripts = {}
+			@requested_css = {}
 		end
 
 		def root
 			return @options[:root]
 		end
 
+		def request_js(path)
+			@requested_scripts[path] = true
+		end
+
+		def request_css(path)
+			@requested_css[path] = true
+		end
+
+		def top(&block)
+			elem = Elements.new(@page, @anchors)
+			elem.instance_eval(&block)
+
+			@top_content = elem.generate
+		end
+
 		def generate(back_folders, options={})
+
+			scripts = @scripts.join("\n")
 
 			mod = "../" * back_folders
 
@@ -667,6 +814,16 @@ ENDROW
 			loading_bar = ""
 			loading_bar = '<script src="js/plugins/pace/pace.min.js"></script>' if @loading_bar_visible
 
+			extra_scripts = @requested_scripts.map {|key,value| <<-SCRIPT_DECL
+    <script src="#{mod}#{key}"></script>
+				SCRIPT_DECL
+			}.join "\n"
+
+			extra_css = @requested_css.map {|key,value| <<-STYLESHEET_DECL
+    <link href="#{mod}#{key}" rel="stylesheet">
+				STYLESHEET_DECL
+			}.join "\n"
+
 			<<-SKELETON
 <!DOCTYPE html>
 <html>
@@ -682,13 +839,16 @@ ENDROW
     <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
     <link href="#{mod}css/plugins/blueimp/css/blueimp-gallery.min.css" rel="stylesheet">
+
+#{extra_css}
+
     #{style}
     <link href="#{mod}css/animate.css" rel="stylesheet">
     
 </head>
 
 #{body_tag}
-
+#{@top_content}
 #{@content}
 
     <!-- Mainly scripts -->
@@ -697,6 +857,8 @@ ENDROW
     <script src="#{mod}js/bootstrap.min.js"></script>
     <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+
+#{extra_scripts}
 
     <!-- blueimp gallery -->
     <script src="#{mod}js/plugins/blueimp/jquery.blueimp-gallery.min.js"></script>
@@ -718,6 +880,10 @@ ENDROW
     <!-- Custom and plugin javascript -->
     <script src="#{mod}js/inspinia.js"></script>
     #{loading_bar}
+
+    <script>
+#{scripts}
+    </script>
 
     <div id="blueimp-gallery" class="blueimp-gallery">
                                 <div class="slides"></div>
@@ -1140,7 +1306,12 @@ ENDROW
 			instance_eval(File.read(file), file)
 		end
 
-		def center_page(path, title, &block)
+		def center_page(path, title=nil, &block)
+
+			if title == nil
+				title = path
+				path = ""
+			end
 
 			p = CenterPage.new(title, @options)
 
@@ -1152,13 +1323,25 @@ ENDROW
 			@pages[path] = p
 		end
 
-		def sidenav_page(path, title, &block)
+		def sidenav_page(path, title=nil, &block)
+
+			if title == nil
+				title = path
+				path = ""
+			end
+
 			p = SideNavPage.new(title, @options)
 			p.instance_eval(&block) if block
 			@pages[path] = p
 		end
 
-		def topnav_page(path, title, &block)
+		def topnav_page(path, title=nil, &block)
+
+			if title == nil
+				title = path
+				path = ""
+			end
+
 			p = TopNavPage.new(title, @options)
 			p.instance_eval(&block) if block
 			@pages[path] = p
