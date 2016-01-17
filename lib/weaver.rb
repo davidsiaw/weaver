@@ -812,7 +812,7 @@ ENDROW
 			body_tag = "<body class='#{@body_class}'>" if @body_class
 
 			loading_bar = ""
-			loading_bar = '<script src="js/plugins/pace/pace.min.js"></script>' if @loading_bar_visible
+			loading_bar = '<script src="#{mod}js/plugins/pace/pace.min.js"></script>' if @loading_bar_visible
 
 			extra_scripts = @requested_scripts.map {|key,value| <<-SCRIPT_DECL
     <script src="#{mod}#{key}"></script>
