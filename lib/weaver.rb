@@ -50,6 +50,12 @@ module Weaver
 			end
 		end
 
+		def form(options={}, &block)
+        	theform = Form.new(@page, @anchors, options)
+        	theform.instance_eval(&block)
+        	@inner_content << theform.generate
+		end
+
         def ibox(options={}, &block)
         	panel = Panel.new(@page, @anchors, options)
         	panel.instance_eval(&block)
@@ -213,7 +219,7 @@ ENDROW
 			div :class => "jumbotron", style: additional_style, &block
 		end
 
-		def _button(options={})
+		def _button(options={}, &block)
 
 			anIcon = options[:icon]
 			title = options[:title]
@@ -222,12 +228,11 @@ ENDROW
 				options.merge! title
 				title = anIcon
 				anIcon = nil
-
 			end
 
 			style = options[:style] || :primary
 			size = "btn-#{options[:size]}" if options[:size]
-			block = "btn-block" if options[:block]
+			blockstyle = "btn-block" if options[:block]
 			outline = "btn-outline" if options[:outline]
 			dim = "dim" if options[:threedee]
 			dim = "dim btn-large-dim" if options[:bigthreedee]
@@ -236,8 +241,14 @@ ENDROW
 
 			buttonOptions = {
 				:type => "button",
-				:class => "btn btn-#{style} #{size} #{block} #{outline} #{dim}"
+				:class => "btn btn-#{style} #{size} #{blockstyle} #{outline} #{dim}"
 			}
+
+			if block
+				action = Action.new(@page, @anchors, &block)
+				buttonOptions[:onclick] = "#{action.name}(this)"
+				@page.scripts << action.generate
+			end
 
 			type = :button
 
@@ -256,76 +267,126 @@ ENDROW
 			end
 		end
 
-		def button(anIcon, title, options={})
+		def button(anIcon, title={}, options={}, &block)
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def block_button(anIcon, title, options={})
+		def block_button(anIcon, title={}, options={}, &block)
 			options[:block] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def outline_button(anIcon, title, options={})
+		def outline_button(anIcon, title={}, options={}, &block)
 			options[:outline] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def big_button(anIcon, title, options={})
+		def big_button(anIcon, title={}, options={}, &block)
 			options[:size] = :lg
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def small_button(anIcon, title, options={})
+		def small_button(anIcon, title={}, options={}, &block)
 			options[:size] = :sm
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def tiny_button(anIcon, title, options={})
+		def tiny_button(anIcon, title={}, options={}, &block)
 			options[:size] = :xs
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def embossed_button(anIcon, title, options={})
+		def embossed_button(anIcon, title={}, options={}, &block)
 			options[:threedee] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def big_embossed_button(anIcon, title, options={})
+		def big_embossed_button(anIcon, title={}, options={}, &block)
 			options[:bigthreedee] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def rounded_button(anIcon, title, options={})
+		def rounded_button(anIcon, title={}, options={}, &block)
 			options[:rounded] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def circle_button(anIcon, title, options={})
+		def circle_button(anIcon, title={}, options={}, &block)
 			options[:circle] = true
 			options[:icon] = anIcon
 			options[:title] = title
-			_button(options)
+			_button(options, &block)
 		end
 
-		def table_from_hashes(hashes)
+		def table(options={}, &block)
+
+			if !@anchors["tables"]
+				@anchors["tables"] = []
+			end
+
+			tableArray = @anchors["tables"]
+
+			table_name = "table#{tableArray.length}"
+			if options[:id] != nil
+				table_name = options[:id]
+			end
+			tableArray << table_name
+
+			classname = "table"
+
+			classname += " table-bordered" if options[:bordered]
+			classname += " table-hover" if options[:hover]
+			classname += " table-striped" if options[:striped]
+
+			if options[:system] == :data_table
+				@page.request_js "js/plugins/dataTables/jquery.dataTables.js"
+				@page.request_js "js/plugins/dataTables/dataTables.bootstrap.js"
+				@page.request_js "js/plugins/dataTables/dataTables.responsive.js"
+				@page.request_js "js/plugins/dataTables/dataTables.tableTools.min.js"
+
+				@page.request_css "css/plugins/dataTables/dataTables.bootstrap.css"
+				@page.request_css "css/plugins/dataTables/dataTables.responsive.css"
+				@page.request_css "css/plugins/dataTables/dataTables.tableTools.min.css"
+
+				@page.scripts << <<-DATATABLE_SCRIPT
+		$('##{table_name}').DataTable();
+				DATATABLE_SCRIPT
+			end
+
+			if options[:system] == :foo_table
+				classname += " toggle-arrow-tiny"
+				@page.request_js "js/plugins/footable/footable.all.min.js"
+
+				@page.request_css "css/plugins/footable/footable.core.css"
+
+				@page.scripts << <<-DATATABLE_SCRIPT
+		$('##{table_name}').footable();
+				DATATABLE_SCRIPT
+			end
+
+
+			method_missing(:table, :class => classname, id: table_name, &block)
+		end
+
+		def table_from_hashes(hashes, options={})
 
 			keys = {}
 			hashes.each do |hash|
@@ -334,7 +395,7 @@ ENDROW
 				end
 			end
 
-			table class: "table" do
+			table options do
 
 				thead do
 					keys.each do |key, _| 
@@ -346,7 +407,7 @@ ENDROW
 
 					tr do
 						keys.each do |key, _|
-							td hash[key] || "&nbsp;"
+							td "#{hash[key]}" || "&nbsp;"
 						end
 					end
 				end
@@ -356,6 +417,45 @@ ENDROW
 
 		def generate
 			@inner_content.join
+		end
+	end
+
+	class Action
+		def initialize(page, anchors, &block)
+			@page = page
+			@anchors = anchors
+
+			actionsArray = @anchors["action"]
+
+			if !@anchors["action"]
+				@anchors["action"] = []
+			end
+
+			actionsArray = @anchors["action"]
+
+			@actionName = "action#{actionsArray.length}"
+			actionsArray << @actionName
+
+			@code = ""
+
+			self.instance_eval(&block)
+		end
+
+		def script(code)
+			@code = code
+		end
+
+		def generate
+			puts @code
+			<<-FUNCTION
+function #{@actionName}(caller, data) {
+	#{@code}
+}
+			FUNCTION
+		end
+
+		def name
+			@actionName
 		end
 	end
 
@@ -375,7 +475,7 @@ ENDROW
 			codeArray = @anchors["code"]
 
 			@codeName = "code#{codeArray.length}"
-			codeArray << @accordion_name
+			codeArray << @codeName
 
 			@page.request_css "css/plugins/codemirror/codemirror.css"
 			@page.request_js "js/plugins/codemirror/codemirror.js"
@@ -442,6 +542,106 @@ ENDROW
         	end
 
         	elem.generate
+		end
+	end
+
+	class Form < Elements
+		def initialize(page, anchors, options)
+			super(page, anchors)
+			@options = options
+
+			formArray = @anchors["form"]
+
+			if !@anchors["form"]
+				@anchors["form"] = []
+			end
+
+			formArray = @anchors["form"]
+
+			@formName = "form#{formArray.length}"
+			formArray << @formName
+
+		end
+
+		
+
+		def passwordfield(textfield_label, options={})
+			options[:type] = "password"
+			textfield(textfield_label, options)
+		end
+
+		def textfield(textfield_label, options={})
+
+			options[:type] ||= "text"
+			options[:placeholder] ||= ""
+
+			div :class => "form-group" do
+				label textfield_label
+				input type: options[:type], placeholder: options[:placeholder], name: textfield_label, class: "form-control"
+			end
+		end
+
+		def radio(name, choice_array, options={})
+
+			choice_array.each do |choice|
+				options[:type] = "radio"
+				options[:value] = choice
+				options[:name] = name
+				text boolean_element(choice, options)
+			end
+			
+		end
+
+		def checkbox(checkbox_label, options={})
+			options[:type] = "checkbox"
+			options[:name] = checkbox_label
+			text boolean_element(checkbox_label, options)
+		end
+
+		def submit(submit_label, options={}, &block)
+
+		end
+
+		def boolean_element(checkbox_label, options={})
+
+			@page.request_css "css/plugins/iCheck/custom.css"
+			@page.request_js "js/plugins/iCheck/icheck.min.js"
+
+			@page.write_script_once <<-SCRIPT
+$(document).ready(function () {
+    $('.i-checks').iCheck({
+        checkboxClass: 'icheckbox_square-green',
+        radioClass: 'iradio_square-green',
+    });
+});
+			SCRIPT
+
+			elem = Elements.new(@page, @anchors)
+			elem.instance_eval do
+				div class: "i-checks" do
+					label do
+						input options do
+							text " #{checkbox_label}"
+						end
+					end
+				end
+			end
+
+			elem.generate
+		end
+
+		def generate
+			inner = super
+			formName = @formName
+
+			elem = Elements.new(@page, @anchors)
+			elem.instance_eval do
+				method_missing :form, id: formName, role: "form" do
+					text inner
+				end
+			end
+
+			elem.generate
 		end
 	end
 
@@ -770,6 +970,8 @@ ENDROW
 			@scripts = []
 			@top_content = ""
 
+			@scripts_once = {}
+
 			@requested_scripts = {}
 			@requested_css = {}
 		end
@@ -784,6 +986,10 @@ ENDROW
 
 		def request_css(path)
 			@requested_css[path] = true
+		end
+
+		def write_script_once(script)
+			@scripts_once[script] = true
 		end
 
 		def top(&block)
@@ -822,6 +1028,11 @@ ENDROW
 			extra_css = @requested_css.map {|key,value| <<-STYLESHEET_DECL
     <link href="#{mod}#{key}" rel="stylesheet">
 				STYLESHEET_DECL
+			}.join "\n"
+
+			extra_one_time_scripts = @scripts_once.map {|key,value| <<-SCRIPT_DECL
+#{key}
+				SCRIPT_DECL
 			}.join "\n"
 
 			<<-SKELETON
@@ -883,6 +1094,7 @@ ENDROW
 
     <script>
 #{scripts}
+#{extra_one_time_scripts}
     </script>
 
     <div id="blueimp-gallery" class="blueimp-gallery">
@@ -995,6 +1207,8 @@ ENDROW
 		def nav(name, icon=:question, url=nil, &block)
 			if url 
 				@items << { name: name, link: url, icon: icon }
+			else
+				@items << { name: name, link: "#", icon: icon }
 			end
 			if block
 				menu = Menu.new
