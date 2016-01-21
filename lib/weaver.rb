@@ -54,6 +54,7 @@ module Weaver
         	theform = Form.new(@page, @anchors, options)
         	theform.instance_eval(&block)
         	@inner_content << theform.generate
+        	@page.scripts << theform.generate_script
 		end
 
         def ibox(options={}, &block)
@@ -247,6 +248,7 @@ ENDROW
 			if block
 				action = Action.new(@page, @anchors, &block)
 				buttonOptions[:onclick] = "#{action.name}(this)"
+				buttonOptions[:onclick] = "#{action.name}(this, #{options[:data]})" if options[:data]
 				@page.scripts << action.generate
 			end
 
@@ -549,57 +551,125 @@ function #{@actionName}(caller, data) {
 		def initialize(page, anchors, options)
 			super(page, anchors)
 			@options = options
+			@scripts = []
 
-			formArray = @anchors["form"]
-
-			if !@anchors["form"]
-				@anchors["form"] = []
-			end
-
-			formArray = @anchors["form"]
-
-			@formName = "form#{formArray.length}"
-			formArray << @formName
-
+			@formName = @page.create_anchor "form"
 		end
 
-		
-
-		def passwordfield(textfield_label, options={})
+		def passwordfield(name, textfield_label, options={})
 			options[:type] = "password"
-			textfield(textfield_label, options)
+			textfield(name, textfield_label, options)
 		end
 
-		def textfield(textfield_label, options={})
+		def textfield(name, textfield_label, options={})
 
+			textfield_name = @page.create_anchor "textfield"
 			options[:type] ||= "text"
 			options[:placeholder] ||= ""
+			options[:name] = name
 
 			div :class => "form-group" do
 				label textfield_label
-				input type: options[:type], placeholder: options[:placeholder], name: textfield_label, class: "form-control"
+				input type: options[:type], placeholder: options[:placeholder], id: textfield_name, name: options[:name], class: "form-control"
 			end
+
+			@scripts << <<-SCRIPT
+	object["#{name}"] = $('##{textfield_name}').val();
+			SCRIPT
+		end
+
+	
+		def dropdown(name, dropdown_label, choice_array, options={})
+			select_name = @page.create_anchor "select"
+
+			div :class => "form-group" do
+				label dropdown_label, :class => "control-label"
+
+				options[:class] = "form-control"
+				options[:name] = name
+				options[:id] = select_name
+
+				method_missing :select, options do
+					choice_array.each do |choice|
+						option choice
+					end
+				end
+			end
+
+			if options[:multiple]
+				@scripts << <<-SCRIPT
+	var selections = []; 
+	$("##{select_name} option:selected").each(function(i, selected){ 
+  		selections[i] = $(selected).text(); 
+	});
+	object["#{name}"] = selections;
+				SCRIPT
+			else
+				@scripts << <<-SCRIPT
+	object["#{name}"] = $( "##{select_name} option:selected" ).text();
+				SCRIPT
+			end
+
 		end
 
 		def radio(name, choice_array, options={})
 
+			radio_name = @page.create_anchor "radio"
+
+			first = true
 			choice_array.each do |choice|
-				options[:type] = "radio"
-				options[:value] = choice
-				options[:name] = name
-				text boolean_element(choice, options)
+
+				value = choice
+				label = choice
+				if choice.is_a? Hash
+					value = choice[:value]
+					label = choice[:label]
+				end
+
+				the_options = Hash.new(options)
+				if first
+					the_options[:checked] = ""
+					first = false
+				end
+				the_options[:type] = "radio"
+				the_options[:value] = value
+				the_options[:name] = name
+				text boolean_element(label, the_options)
 			end
+			@scripts << <<-SCRIPT
+	object["#{name}"] = $('input[name=#{name}]:checked', '##{@formName}').val()
+			SCRIPT
 			
 		end
 
-		def checkbox(checkbox_label, options={})
+		def checkbox(name, checkbox_label, options={})
+			checkbox_name = @page.create_anchor "checkbox"
 			options[:type] = "checkbox"
-			options[:name] = checkbox_label
+			options[:name] = name
+			options[:id] = checkbox_name
 			text boolean_element(checkbox_label, options)
+			@scripts << <<-SCRIPT
+	object["#{name}"] = $('##{checkbox_name}').is(":checked");
+			SCRIPT
 		end
 
-		def submit(submit_label, options={}, &block)
 
+		def submit(anIcon, title={}, options={}, &block)
+			options[:icon] = anIcon
+			options[:title] = title
+			options[:data] = "get_#{@formName}_object()"
+			_button(options, &block)
+		end
+
+		def generate_script
+			<<-SCRIPT
+function get_#{@formName}_object()
+{
+	var object = {}
+#{@scripts.join "\n"}
+	return object;
+}
+			SCRIPT
 		end
 
 		def boolean_element(checkbox_label, options={})
@@ -974,6 +1044,20 @@ $(document).ready(function () {
 
 			@requested_scripts = {}
 			@requested_css = {}
+		end
+
+		def create_anchor(name)
+
+			if !@anchors[name]
+				@anchors[name] = []
+			end
+
+			anchor_array = @anchors[name]
+
+			anchor_name = "#{name}#{anchor_array.length}"
+			anchor_array << anchor_name
+
+			anchor_name
 		end
 
 		def root
