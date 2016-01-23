@@ -568,9 +568,24 @@ function #{@actionName}(caller, data) {
 			options[:placeholder] ||= ""
 			options[:name] = name
 
+			input_options = {}
+			input_options[:type] = options[:type]
+			input_options[:placeholder] = options[:placeholder]
+			input_options[:id] = textfield_name
+			input_options[:name] = options[:name]
+			input_options[:class] = "form-control"
+
+			if options[:mask]
+				@page.request_css "css/plugins/jasny/jasny-bootstrap.min.css"
+				@page.request_js "js/plugins/jasny/jasny-bootstrap.min.js"
+
+				input_options[:"data-mask"] = options[:mask]
+
+			end
+
 			div :class => "form-group" do
 				label textfield_label
-				input type: options[:type], placeholder: options[:placeholder], id: textfield_name, name: options[:name], class: "form-control"
+				input input_options
 			end
 
 			@scripts << <<-SCRIPT
@@ -610,6 +625,37 @@ function #{@actionName}(caller, data) {
 				SCRIPT
 			end
 
+		end
+
+		def knob(name, options={})
+
+			knob_name = @page.create_anchor "knob"
+
+			@page.request_js "js/plugins/jsKnob/jquery.knob.js"
+			@page.write_script_once <<-SCRIPT
+	$(".dial").knob();
+			SCRIPT
+
+			knob_options = {}
+
+			knob_options[:id] = knob_name
+			knob_options[:type] = "text"
+			knob_options[:value] = options[:value] || "0"
+			knob_options[:class] = "dial"
+
+			options.each do |key,value|
+				knob_options["data-#{key}".to_sym] = value
+			end
+
+			knob_options[:"data-fgColor"] = "#1AB394"
+			knob_options[:"data-width"] = "85"
+			knob_options[:"data-height"] = "85"
+
+			input knob_options
+
+			@scripts << <<-SCRIPT
+	object["#{name}"] = $('##{knob_name}').val();
+			SCRIPT
 		end
 
 		def radio(name, choice_array, options={})
