@@ -128,6 +128,19 @@ module Weaver
 			@inner_content << theText
 		end
 
+		def badge(label, options={})
+			options[:type] ||= "plain"
+
+			kind = "label"
+			kind = "badge" if options[:rounded]
+			tag_options = {}
+			tag_options[:class] = "#{kind} #{kind}-#{options[:type]}"
+			span tag_options do
+				text label
+			end
+		end
+
+
 		def link(url, title=nil, &block)
 			if !title
 				title = url
@@ -791,21 +804,37 @@ function #{@actionName}(caller, data) {
 		def dropdown(name, dropdown_label, choice_array, options={})
 			select_name = @page.create_anchor "select"
 
-			div :class => "form-group" do
-				label dropdown_label, :class => "control-label"
 
-				options[:class] = "form-control"
-				options[:name] = name
-				options[:id] = select_name
+			options[:class] = "form-control"
+			options[:name] = name
+			options[:id] = select_name
+			options[:placeholder] ||= " "
 
-				method_missing :select, options do
-					choice_array.each do |choice|
-						option choice
-					end
-				end
-			end
+			form_options = options.clone
 
 			if options[:multiple]
+
+				if options[:multiple_style] == :chosen
+					@page.request_css "css/plugins/chosen/chosen.css"
+					@page.request_js "js/plugins/chosen/chosen.jquery.js"
+
+					@page.write_script_once <<-SCRIPT
+	var config = {
+		'.chosen-select'           : {placeholder_text_multiple: "#{options[:placeholder]}"},
+		'.chosen-select-deselect'  : {allow_single_deselect:true},
+		'.chosen-select-no-single' : {disable_search_threshold:10},
+		'.chosen-select-no-results': {no_results_text:'Oops, nothing found!'},
+		'.chosen-select-width'     : {width:"95%"}
+	}
+	for (var selector in config) {
+		$(selector).chosen(config[selector]);
+	}
+					SCRIPT
+
+					form_options[:class] = "chosen-select"
+					form_options[:style] = "width: 100%"
+				end
+
 				@scripts << <<-SCRIPT
 	var selections = []; 
 	$("##{select_name} option:selected").each(function(i, selected){ 
@@ -813,11 +842,27 @@ function #{@actionName}(caller, data) {
 	});
 	object["#{name}"] = selections;
 				SCRIPT
+
 			else
 				@scripts << <<-SCRIPT
 	object["#{name}"] = $( "##{select_name} option:selected" ).text();
 				SCRIPT
 			end
+
+
+			div :class => "form-group" do
+				label dropdown_label, :class => "control-label"
+
+				div :class => "input-group", style: "width: 100%" do
+
+					method_missing :select, form_options do
+						choice_array.each do |choice|
+							option choice
+						end
+					end
+				end
+			end
+
 
 		end
 
