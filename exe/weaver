@@ -7,6 +7,7 @@ class Website < Sinatra::Base
 
 	set :static, true 							# set up static file routing
 	set :public_folder, Gem.datadir("weaver")	# set up the static dir (with images/js/css inside)
+	set :bind, '0.0.0.0'
 
 	def getWeavefile(viewname)
 

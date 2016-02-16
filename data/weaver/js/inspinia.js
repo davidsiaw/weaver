@@ -4,7 +4,11 @@
  *   version 2.2
  *
  */
-
+ 
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
 
 $(document).ready(function () {
 
@@ -92,10 +96,10 @@ $(document).ready(function () {
 
     // Append config box / Only for demo purpose
     // Uncomment on server mode to enable XHR calls
-    $.get("skin-config.html", function (data) {
-        if (!$('body').hasClass('no-skin-config'))
-            $('body').append(data);
-    });
+    //$.get("skin-config.html", function (data) {
+    //    if (!$('body').hasClass('no-skin-config'))
+    //        $('body').append(data);
+    //});
 
     // Minimalize menu
     $('.navbar-minimalize').click(function () {

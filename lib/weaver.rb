@@ -340,17 +340,13 @@ ENDROW
 
 		def table(options={}, &block)
 
-			if !@anchors["tables"]
-				@anchors["tables"] = []
-			end
 
-			tableArray = @anchors["tables"]
+			table_name = options[:id] || @page.create_anchor("table")
+			table_style = ""
 
-			table_name = "table#{tableArray.length}"
-			if options[:id] != nil
-				table_name = options[:id]
+			if options[:style] != nil
+				table_style = options[:style]
 			end
-			tableArray << table_name
 
 			classname = "table"
 
@@ -385,7 +381,17 @@ ENDROW
 			end
 
 
-			method_missing(:table, :class => classname, id: table_name, &block)
+			method_missing(:table, :class => classname, id: table_name, style: table_style, &block)
+		end
+
+		def table_from_source(url, options={}, &block)
+
+			dyn_table = DynamicTable.new(@page, @anchors, url, options, &block)
+
+			text dyn_table.generate_table
+
+			@page.scripts << dyn_table.generate_script
+
 		end
 
 		def table_from_hashes(hashes, options={})
@@ -405,20 +411,208 @@ ENDROW
 					end
 				end
 
-				hashes.each do |hash|
+				tbody do
 
-					tr do
-						keys.each do |key, _|
-							td "#{hash[key]}" || "&nbsp;"
+					hashes.each do |hash|
+
+						tr do
+							keys.each do |key, _|
+								td "#{hash[key]}" || "&nbsp;"
+							end
 						end
 					end
 				end
-
 			end
 		end
 
 		def generate
 			@inner_content.join
+		end
+	end
+
+	class DynamicTableCell < Elements
+
+		def data_button(anIcon, title={}, options={}, &block)
+			options[:icon] = anIcon
+			options[:title] = title
+			options[:data] = "$(this).closest('td').data('object')"
+			_button(options, &block)
+		end
+	end
+
+	class DynamicTable
+
+		def initialize(page, anchors, url, options={}, &block)
+			@page = page
+			@anchors = anchors
+			@url = url
+			@options = options
+			@columns = nil
+
+			self.instance_eval(&block) if block
+
+			@options[:id] ||= @page.create_anchor "dyn_table"
+			@table_name = @options[:id]
+			@head_name = "#{@table_name}_head"
+			@body_name = "#{@table_name}_body"
+
+
+		end
+
+		def column(name, options={}, &block)
+			if @columns == nil
+				@columns = []
+			end
+
+			title = options[:title] || name
+			format = nil
+
+			if options[:icon]
+        		elem = Elements.new(@page, @anchors)
+        		elem.instance_eval do
+        			icon options[:icon]
+        			text " #{title}"
+        		end
+        		title = elem.generate
+			end
+
+			if block
+        		elem = DynamicTableCell.new(@page, @anchors)
+        		elem.instance_eval(&block)
+				format = elem.generate
+			end
+
+			@columns << {name: name, title: title, format: format}
+
+		end
+
+		def generate_table
+
+			table_name = @table_name
+			head_name = @head_name
+			body_name = @body_name
+			options = @options
+
+			columns = @columns || [ {title: "Key"}, {title: "Value"} ]
+
+        	elem = Elements.new(@page, @anchors)
+        	elem.instance_eval do
+
+				table options do
+					thead id: head_name do
+						columns.each do |column, _|
+							if column.is_a? Hash
+								th column[:title].to_s
+							else
+								th column.to_s
+							end 
+						end
+					end
+
+					tbody id: body_name do
+					end
+				end
+        	end
+
+        	elem.generate
+		end
+
+		def generate_script
+
+			<<-DATATABLE_SCRIPT
+
+	function refresh_table_#{@table_name}()
+	{
+		$.get( "#{@url}", function( data )
+		{
+			var data_object = JSON.parse(data);
+			var head = $("##{@head_name}")
+			var body = $("##{@body_name}")
+
+			if($.isPlainObject(data_object))
+			{
+				for (var key in data_object)
+				{
+					var row = $('<tr>');
+					row.append($('<td>').text(key));
+					row.append($('<td>').text(data_object[key]));
+					body.append(row);
+				}
+			}
+
+			if ($.isArray(data_object))
+			{
+
+				var columnData = JSON.parse(#{@columns.to_json.inspect});
+				var columns = {};
+				var columnTitles = [];
+				head.empty();
+				if (#{@columns == nil})
+				{
+					// Set up columns
+					for (var index in data_object)
+					{
+						for (var key in data_object[index])
+						{
+							columns[key] = Object.keys(columns).length;
+						}
+					}
+					for (var key in columns)
+					{
+						columnTitles.push(key);
+					}
+				}
+				else
+				{
+					for (var key in columnData)
+					{
+						columns[columnData[key]["name"]] = Object.keys(columns).length;
+						columnTitles.push(columnData[key]["title"]);
+					}
+				}
+
+				var row = $('<tr>');
+				for (var key in columnTitles)
+				{
+					var columnTitle = $('<th>').html(columnTitles[key]);
+					row.append(columnTitle);
+				}
+				head.append(row);
+
+				for (var index in data_object)
+				{
+					var row = $('<tr>');
+					for (var columnIndex = 0; columnIndex < Object.keys(columns).length; columnIndex++) {
+						var cell_data = data_object[index][ Object.keys(columns)[columnIndex] ];
+						if (columnData && columnData[columnIndex]["format"])
+						{
+							var format = columnData[columnIndex]["format"];
+							var matches = format.match(/###.+?###/g)
+
+							var result = format;
+							for (var matchIndex in matches)
+							{
+								var member_name = matches[matchIndex].match(/[^#]+/)[0];
+								result = result.replaceAll(matches[matchIndex], data_object[index][member_name]);
+							}
+
+							row.append($('<td>').html( result ).data("object", data_object[index]) );
+						}
+						else
+						{
+							row.append($('<td>').text( cell_data ).data("object", data_object[index]) );
+						}
+					}
+					body.append(row);
+				}
+			}
+
+		});
+	}
+
+	refresh_table_#{@table_name}();
+
+			DATATABLE_SCRIPT
 		end
 	end
 
@@ -1074,7 +1268,7 @@ $(document).ready(function () {
 	end
 
 	class Page
-
+	
 		attr_accessor :scripts
 
 		def initialize(title, options)
@@ -1348,20 +1542,8 @@ $(document).ready(function () {
 		end
 	end
 
-	class NavPage < Page
-		def initialize(title, options)
-			super
-			@menu = Menu.new
-		end
+	class StructuredPage < Page
 
-		def menu(&block)
-			@menu.instance_eval(&block)
-		end
-
-	end
-
-
-	class SideNavPage < NavPage
 		def initialize(title, options)
 			@rows = []
 			super
@@ -1371,15 +1553,34 @@ $(document).ready(function () {
 			row(class: "wrapper border-bottom white-bg page-heading", &block)
 		end
 
+		def row(options={}, &block)
+			r = Row.new(self, @anchors, options)
+			r.instance_eval(&block)
+			@rows << r
+		end
+
+	end
+
+	class NavPage < StructuredPage
+		def initialize(title, options)
+			super
+			@menu = Menu.new
+		end
+
+		def menu(&block)
+			@menu.instance_eval(&block)
+		end
+
 		def brand(text, link="/")
 			@brand = text
 			@brand_link = link
 		end
 
-		def row(options={}, &block)
-			r = Row.new(self, @anchors, options)
-			r.instance_eval(&block)
-			@rows << r
+	end
+
+	class SideNavPage < NavPage
+		def initialize(title, options)
+			super
 		end
 
 		def generate(level)
@@ -1482,23 +1683,7 @@ $(document).ready(function () {
 
 	class TopNavPage < NavPage
 		def initialize(title, options)
-			@rows = []
 			super
-		end
-
-		def header(&block)
-			row(class: "wrapper border-bottom white-bg page-heading", &block)
-		end
-
-		def brand(text, link="/")
-			@brand = text
-			@brand_link = link
-		end
-
-		def row(options={}, &block)
-			r = Row.new(self, @anchors, options)
-			r.instance_eval(&block)
-			@rows << r
 		end
 
 		def generate(level)
@@ -1614,6 +1799,77 @@ $(document).ready(function () {
 		end
 	end
 
+	class NonNavPage < StructuredPage
+		def initialize(title, options)
+			super
+		end
+
+		def generate(level)
+			rows = @rows.map { |row|
+				<<-ENDROW
+	<div class="row #{row.extra_classes}">
+#{row.generate}
+	</div>
+				ENDROW
+			}.join
+
+			@body_class = "gray-bg"
+
+			@content = <<-CONTENT
+	<div id="wrapper">
+	        <div class="wrapper-content">
+	            <div class="container">
+#{rows}
+	            </div>
+			</div>
+		</div>
+			CONTENT
+			super
+		end
+	end
+
+	class RawPage < Page
+		def initialize(title, options)
+			@element = Elements.new(self, {})
+			super
+		end
+
+		def element=(value)
+			@element = value
+		end
+
+
+		def generate(back_folders, options={})
+			@element.generate
+		end
+
+	end
+
+	class EmptyPage < Page
+		def initialize(title, options)
+			@element = Elements.new(self, {})
+			super
+		end
+
+		def element=(value)
+			@element = value
+		end
+
+		def generate(level)
+			@body_class = "gray-bg"
+			@content = <<-CONTENT
+	<div id="wrapper">
+	        <div class="wrapper-content">
+	            <div class="container">
+#{@element.generate}
+	            </div>
+			</div>
+		</div>
+			CONTENT
+			super
+		end
+	end
+
 
 	class CenterPage < Page
 		def initialize(title, options)
@@ -1688,6 +1944,50 @@ $(document).ready(function () {
 
 			p = TopNavPage.new(title, @options)
 			p.instance_eval(&block) if block
+			@pages[path] = p
+		end
+
+		def nonnav_page(path, title=nil, &block)
+
+			if title == nil
+				title = path
+				path = ""
+			end
+
+			p = NonNavPage.new(title, @options)
+			p.instance_eval(&block) if block
+			@pages[path] = p
+		end
+		
+
+		def empty_page(path, title=nil, &block)
+
+			if title == nil
+				title = path
+				path = ""
+			end
+
+			p = EmptyPage.new(title, @options)
+
+			elem = Elements.new(p, {})
+			elem.instance_eval(&block) if block
+
+			p.element=elem
+
+			@pages[path] = p
+		end
+
+		def raw_page(path="", &block)
+
+			# raw pages dont even have a title
+
+			p = RawPage.new("", @options)
+
+			elem = Elements.new(p, {})
+			elem.instance_eval(&block) if block
+
+			p.element=elem
+
 			@pages[path] = p
 		end
 
