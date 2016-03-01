@@ -154,6 +154,7 @@ end
 	to_create = "#{args[0]}"
 	FileUtils::mkdir_p "#{to_create}"
 	FileUtils::mkdir_p "#{to_create}/source"
+	FileUtils::mkdir_p "#{to_create}/images"
 	File.write "#{to_create}/Gemfile", gemfile
 	File.write "#{to_create}/source/index.weave", source
 end

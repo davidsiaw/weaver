@@ -133,8 +133,9 @@ module Weaver
 
 			kind = "label"
 			kind = "badge" if options[:rounded]
-			tag_options = {}
+			tag_options = options.clone
 			tag_options[:class] = "#{kind} #{kind}-#{options[:type]}"
+
 			span tag_options do
 				text label
 			end
