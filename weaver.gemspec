@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Website generator"
   spec.description   = "Site generator with a simple DSL"
-  spec.homepage      = "https://github.com/davidsiaw/weaver"
+  spec.homepage      = "https://davidsiaw.github.io/weaver-docs/"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
