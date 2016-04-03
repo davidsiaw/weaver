@@ -43,6 +43,15 @@ class Website < Sinatra::Base
 			return send_file(params[:splat].first, :disposition => 'inline')
 		end
 
+		if params[:splat].first.start_with? "js/"
+			return send_file(params[:splat].first, :disposition => 'inline')
+		end
+
+		if params[:splat].first.start_with? "css/"
+			return send_file(params[:splat].first, :disposition => 'inline')
+		end
+
+
 		viewname = params[:splat].first
 		result = getWeavefile viewname
 		viewFile = result[:viewFile]
@@ -92,6 +101,16 @@ where [options] are:
 	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
 	if Dir.exist? "images"
 		FileUtils.cp_r("images", buildDir)
+	end
+	if Dir.exist? "js"
+		Dir["js/*.*"].each do |x|
+			FileUtils.cp_r(x, File.join("js", buildDir))
+		end
+	end
+	if Dir.exist? "css"
+		Dir["css/*.*"].each do |x|
+			FileUtils.cp_r(x, File.join("css", buildDir))
+		end
 	end
 
 	files = Dir["source/**/*.weave"]
@@ -153,8 +172,12 @@ end
 
 	to_create = "#{args[0]}"
 	FileUtils::mkdir_p "#{to_create}"
+	FileUtils::mkdir_p "#{to_create}/cache"
+	File.write("#{to_create}/cache/this_directory_is_used_by_weaver_as_a_cache","")
 	FileUtils::mkdir_p "#{to_create}/source"
 	FileUtils::mkdir_p "#{to_create}/images"
+	FileUtils::mkdir_p "#{to_create}/js"
+	FileUtils::mkdir_p "#{to_create}/css"
 	File.write "#{to_create}/Gemfile", gemfile
 	File.write "#{to_create}/source/index.weave", source
 end

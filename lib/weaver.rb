@@ -3,6 +3,7 @@ require "weaver/version"
 require 'fileutils'
 require 'sinatra'
 require 'json'
+require 'active_support/core_ext/object/to_query'
 
 module Weaver
 
@@ -44,13 +45,47 @@ module Weaver
 			tag
 		end
 
+		def root
+			@page.root
+		end
+
+		def request_js(path)
+			@page.request_js(script_file)
+		end
+
+		def request_css(path)
+			@page.request_css(path)
+		end
+
+		def on_page_load(script)
+			@page.on_page_load(script)
+		end
+
+		def write_script_once(script)
+			@page.write_script_once(script)
+		end
+
+		def background(&block)
+			@page.background(block)
+		end
+
+		def on_page_load(script)
+			@page.on_page_load(script)
+		end
+
 		def icon(type)
 			iconname = type.to_s.gsub(/_/, "-")
-			i class: "fa fa-#{iconname}" do
+			if type.is_a? Symbol
+				i class: "fa fa-#{iconname}" do
+				end
+			else
+				i class: "fa" do
+					text type
+				end
 			end
 		end
 
-		def form(options={}, &block)
+		def wform(options={}, &block)
         	theform = Form.new(@page, @anchors, options)
         	theform.instance_eval(&block)
         	@inner_content << theform.generate
@@ -90,17 +125,24 @@ module Weaver
 
         def image(name, options={})
 
-        	style = ""
+        	style = "#{options[:style]}"
         	if options[:rounded_corners] == true
         		style += " border-radius: 8px"
         	elsif options[:rounded_corners] == :top
         		style += " border-radius: 8px 8px 0px 0px"
         	else
-        		style += " border-radius: #{options[:rounded_corners]}px"
+        		style += " border-radius: #{options[:rounded_corners]}px" if options[:rounded_corners]
 
         	end
 
-        	img class: "img-responsive #{options[:class]}", src: "#{@page.root}images/#{name}", style: style
+        	img_options = {
+        		class: "img-responsive #{options[:class]}", 
+    			src: "#{@page.root}images/#{name}", 
+    			style: style
+        	}
+        	img_options[:id] = options[:id] if options[:id]
+
+        	img img_options
         end
 
         def crossfade_image(image_normal, image_hover)
@@ -110,6 +152,35 @@ module Weaver
 			end
 			image image_hover
 			@page.request_css "css/crossfade_style.css"
+        end
+
+        def gallery(images, thumbnails=images, options={}, &block)
+
+			@page.request_css "css/plugins/blueimp/css/blueimp-gallery.min.css"
+
+		    div class:"lightBoxGallery" do
+				(0...images.length).to_a.each do |index|
+
+					title = options[:titles][index] if options[:titles]
+
+					 a href:"#{images[index]}", title: "#{title}", :"data-gallery"=> "" do
+					 	img src:"#{thumbnails[index]}", style: "margin: 5px;"
+					 end
+				end
+
+				div id:"blueimp-gallery", class:"blueimp-gallery" do
+					div class:"slides" do end
+					h3 class:"title" do end
+					a class:"prev" do end
+					a class:"next" do end
+					a class:"close" do end
+					a class:"play-pause" do end
+					ol class:"indicator" do end
+				end
+		    end
+
+			@page.request_js "js/plugins/blueimp/jquery.blueimp-gallery.min.js"
+
         end
 
 		def breadcrumb(patharray)
@@ -234,6 +305,11 @@ ENDROW
 			div :class => "jumbotron", style: additional_style, &block
 		end
 
+		def modal(id=nil, &block)
+			mm = ModalDialog.new(@page, @anchors, id, &block)
+			@inner_content << mm.generate
+		end
+
 		def _button(options={}, &block)
 
 			anIcon = options[:icon]
@@ -255,14 +331,19 @@ ENDROW
 			dim = "btn-circle" if options[:circle]
 
 			buttonOptions = {
-				:type => "button",
-				:class => "btn btn-#{style} #{size} #{blockstyle} #{outline} #{dim}"
+				:type => options[:type] || "button",
+				:class => "btn btn-#{style} #{size} #{blockstyle} #{outline} #{dim}",
+				:id => options[:id]
 			}
 
 			if block
+				closer = ""
+
+				closer = "; return false;" if options[:nosubmit]
+
 				action = Action.new(@page, @anchors, &block)
 				buttonOptions[:onclick] = "#{action.name}(this)"
-				buttonOptions[:onclick] = "#{action.name}(this, #{options[:data]})" if options[:data]
+				buttonOptions[:onclick] = "#{action.name}(this, #{options[:data]})#{closer}" if options[:data]
 				@page.scripts << action.generate
 			end
 
@@ -270,6 +351,7 @@ ENDROW
 
 			buttonOptions[:"data-toggle"] = "button" if options[:toggle]
 			type = :a if options[:toggle]
+
 
 
 			method_missing type, buttonOptions do
@@ -283,7 +365,7 @@ ENDROW
 			end
 		end
 
-		def button(anIcon, title={}, options={}, &block)
+		def normal_button(anIcon, title={}, options={}, &block)
 			options[:icon] = anIcon
 			options[:title] = title
 			_button(options, &block)
@@ -444,6 +526,68 @@ ENDROW
 		end
 	end
 
+	class ModalDialog
+
+		def initialize(page, anchors, id, &block)
+			@page = page
+			@anchors = anchors
+			@id = id || @page.create_anchor("modal")
+
+			@header_content = Elements.new(@page, @anchors)
+			@body_content = Elements.new(@page, @anchors)
+			@footer_content = Elements.new(@page, @anchors)
+
+			instance_eval(&block) if block
+		end
+
+		def id
+			@id
+		end
+
+		def header(&block)
+			@header_content.instance_eval(&block)
+		end
+
+		def body(&block)
+			@body_content.instance_eval(&block)
+		end
+
+		def footer(&block)
+			@footer_content.instance_eval(&block)
+		end
+
+		def generate
+        	elem = Elements.new(@page, @anchors)
+
+        	id = @id
+        	header_content = @header_content
+			body_content = @body_content
+			footer_content = @footer_content
+
+        	elem.instance_eval do
+				div class: "modal fade", id: id, tabindex: -1, role: "dialog" do 
+					div class: "modal-dialog", role: "document" do
+						div class: "modal-content" do
+							div class: "modal-header" do
+								button "&times;", type: "button", class: "close", :"data-dismiss" => "modal", :"aria-label" => "Close"
+								text header_content.generate
+							end
+							div class: "modal-body" do
+								text body_content.generate
+							end
+							div class: "modal-footer" do
+								text footer_content.generate
+							end
+						end
+					end
+				end
+        	end
+
+        	elem.generate
+			
+		end
+	end
+
 	class DynamicTableCell < Elements
 
 		def data_button(anIcon, title={}, options={}, &block)
@@ -454,6 +598,39 @@ ENDROW
 		end
 	end
 
+	class JavaScriptObject
+		def initialize(&block)
+			@object = {}
+			instance_eval(&block) if block
+		end
+
+		def string(name, string)
+			@object[name] = {type: :string, value: string}
+		end
+
+		def variable(name, var_name)
+			@object[name] = {type: :var, value: var_name}
+		end
+
+		def generate
+			result = @object.map {
+				|key,value| 
+
+				value_expression = value[:value]
+
+				if value[:type] == :string
+					value_expression = "\"#{value[:value]}\""
+				end
+
+				"#{key}: #{value_expression}"
+
+			}.join ","
+
+			"{#{result}}"
+		end
+
+	end
+
 	class DynamicTable
 
 		def initialize(page, anchors, url, options={}, &block)
@@ -462,6 +639,7 @@ ENDROW
 			@url = url
 			@options = options
 			@columns = nil
+			@query_object = nil
 
 			self.instance_eval(&block) if block
 
@@ -531,15 +709,39 @@ ENDROW
         	elem.generate
 		end
 
+		def query(&block)
+			@query_object = JavaScriptObject.new(&block)
+		end
+
 		def generate_script
+
+			query_object_declaration = ''
+			query_string = ""
+
+			if @query_object
+				query_object_declaration = @query_object.generate
+				query_string = "+ \"?\" + $.param(query_object)"
+			end
 
 			<<-DATATABLE_SCRIPT
 
 	function refresh_table_#{@table_name}()
 	{
-		$.get( "#{@url}", function( data )
+		var query_object = #{query_object_declaration};
+
+		$.get( "#{@url}" #{query_string}, function( data )
 		{
-			var data_object = JSON.parse(data);
+
+			var data_object = {};
+			if (data !== null && typeof data === 'object')
+			{
+				data_object = data;
+			}
+			else
+			{
+				data_object = JSON.parse(data);
+			}
+
 			var head = $("##{@head_name}")
 			var body = $("##{@body_name}")
 
@@ -656,7 +858,7 @@ ENDROW
 		end
 
 		def generate
-			puts @code
+			#puts @code
 			<<-FUNCTION
 function #{@actionName}(caller, data) {
 	#{@code}
@@ -761,15 +963,26 @@ function #{@actionName}(caller, data) {
 			@options = options
 			@scripts = []
 
-			@formName = @page.create_anchor "form"
+			@formName = options[:id] || @page.create_anchor("form")
 		end
 
-		def passwordfield(name, textfield_label, options={})
+		def passwordfield(name, textfield_label=nil, options={})
+
+			if textfield_label.is_a? Hash
+				options = textfield_label
+				textfield_label = nil
+			end
+
 			options[:type] = "password"
 			textfield(name, textfield_label, options)
 		end
 
-		def textfield(name, textfield_label, options={})
+		def textfield(name, textfield_label=nil, options={})
+
+			if textfield_label.is_a? Hash
+				options = textfield_label
+				textfield_label = nil
+			end
 
 			textfield_name = @page.create_anchor "textfield"
 			options[:type] ||= "text"
@@ -781,19 +994,28 @@ function #{@actionName}(caller, data) {
 			input_options[:placeholder] = options[:placeholder]
 			input_options[:id] = textfield_name
 			input_options[:name] = options[:name]
+			input_options[:rows] = options[:rows]
 			input_options[:class] = "form-control"
+
+			input_options[:autocomplete] = options[:autocomplete] || "on"
+			input_options[:autocorrect] = options[:autocorrect] || "on"
+			input_options[:autocapitalize] = options[:autocapitalize] || "off"
 
 			if options[:mask]
 				@page.request_css "css/plugins/jasny/jasny-bootstrap.min.css"
 				@page.request_js "js/plugins/jasny/jasny-bootstrap.min.js"
 
 				input_options[:"data-mask"] = options[:mask]
-
 			end
 
 			div :class => "form-group" do
-				label textfield_label
-				input input_options
+				label textfield_label if textfield_label
+				if input_options[:rows] and input_options[:rows] > 1
+					textarea input_options do
+					end
+				else
+					input input_options
+				end
 			end
 
 			@scripts << <<-SCRIPT
@@ -943,7 +1165,9 @@ function #{@actionName}(caller, data) {
 		def submit(anIcon, title={}, options={}, &block)
 			options[:icon] = anIcon
 			options[:title] = title
+			options[:type] = "submit"
 			options[:data] = "get_#{@formName}_object()"
+			options[:nosubmit] = true if block
 			_button(options, &block)
 		end
 
@@ -989,10 +1213,20 @@ $(document).ready(function () {
 		def generate
 			inner = super
 			formName = @formName
+			options = @options
 
 			elem = Elements.new(@page, @anchors)
 			elem.instance_eval do
-				method_missing :form, id: formName, role: "form" do
+
+				form_opts = {
+					id: formName, 
+					role: "form"
+				}
+
+				form_opts[:action] = options[:action] if options[:action]
+				form_opts[:class] = options[:class] if options[:class]
+
+				method_missing :form, form_opts do
 					text inner
 				end
 			end
@@ -1315,21 +1549,27 @@ $(document).ready(function () {
 
 	class Page
 	
-		attr_accessor :scripts
+		attr_accessor :scripts, :onload_scripts
 
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			@title = title
 			@content = ""
 			@body_class = nil
 			@anchors = {}
+			@global_settings = global_settings
 			@options = options
 			@scripts = []
 			@top_content = ""
 
 			@scripts_once = {}
+			@onload_scripts = []
 
 			@requested_scripts = {}
 			@requested_css = {}
+
+			@background = Elements.new(self, @anchors)
+
+			@block = Proc.new &block
 		end
 
 		def create_anchor(name)
@@ -1347,7 +1587,7 @@ $(document).ready(function () {
 		end
 
 		def root
-			return @options[:root]
+			return @global_settings[:root]
 		end
 
 		def request_js(path)
@@ -1358,8 +1598,16 @@ $(document).ready(function () {
 			@requested_css[path] = true
 		end
 
+		def on_page_load(script)
+			@onload_scripts << script
+		end
+
 		def write_script_once(script)
 			@scripts_once[script] = true
+		end
+
+		def background(&block)
+			@background.instance_eval(&block)
 		end
 
 		def top(&block)
@@ -1370,6 +1618,21 @@ $(document).ready(function () {
 		end
 
 		def generate(back_folders, options={})
+
+			if @options[:cache_file] 
+				expired = @options[:cache_expired]
+				cache_exist = File.exist?("cache/cachedpage#{@options[:cache_file]}")
+
+				if cache_exist and !expired
+					puts "Weaver Hit cache for file: #{@options[:cache_file]}"
+					puts "- expired: #{expired}"
+					puts "- cache_exist: #{cache_exist}"
+					return File.read("cache/cachedpage#{@options[:cache_file]}");
+				end
+				puts "Weaver Miss cache for file: #{@options[:cache_file]}"
+				puts "- expired: #{expired}"
+				puts "- cache_exist: #{cache_exist}"
+			end
 
 			scripts = @scripts.join("\n")
 
@@ -1405,7 +1668,12 @@ $(document).ready(function () {
 				SCRIPT_DECL
 			}.join "\n"
 
-			<<-SKELETON
+			onload_scripts = @onload_scripts.map {|value| <<-SCRIPT_DECL
+#{value}
+				SCRIPT_DECL
+			}.join "\n"
+
+			result =<<-SKELETON
 <!DOCTYPE html>
 <html>
 <!-- Generated using weaver: https://github.com/davidsiaw/weaver -->
@@ -1419,7 +1687,6 @@ $(document).ready(function () {
     <link href="#{mod}css/bootstrap.min.css" rel="stylesheet">
     <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
-    <link href="#{mod}css/plugins/blueimp/css/blueimp-gallery.min.css" rel="stylesheet">
 
 #{extra_css}
 
@@ -1429,8 +1696,15 @@ $(document).ready(function () {
 </head>
 
 #{body_tag}
+
+<div id="background" style="z-index: -999; position:absolute; left:0px; right:0px; width:100%; height:100%">
+#{@background.generate}
+</div>
+
+<div id="content" style="z-index: 0">
 #{@top_content}
 #{@content}
+</div>
 
     <!-- Mainly scripts -->
     <script src="#{mod}js/jquery-2.1.1.js"></script>
@@ -1441,21 +1715,6 @@ $(document).ready(function () {
 
 #{extra_scripts}
 
-    <!-- blueimp gallery -->
-    <script src="#{mod}js/plugins/blueimp/jquery.blueimp-gallery.min.js"></script>
-
-    <style>
-        /* Local style for demo purpose */
-
-        .lightBoxGallery {
-            text-align: center;
-        }
-
-        .lightBoxGallery img {
-            margin: 5px;
-        }
-
-    </style>
 
 
     <!-- Custom and plugin javascript -->
@@ -1465,17 +1724,14 @@ $(document).ready(function () {
     <script>
 #{scripts}
 #{extra_one_time_scripts}
+
+$( document ).ready(function() {
+
+#{onload_scripts}
+
+});
     </script>
 
-    <div id="blueimp-gallery" class="blueimp-gallery">
-                                <div class="slides"></div>
-                                <h3 class="title"></h3>
-                                <a class="prev">‹</a>
-                                <a class="next">›</a>
-                                <a class="close">×</a>
-                                <a class="play-pause"></a>
-                                <ol class="indicator"></ol>
-                            </div>
     
 
 </body>
@@ -1483,16 +1739,25 @@ $(document).ready(function () {
 </html>
 
 			SKELETON
+
+			if @options[:cache_file]
+				FileUtils.mkdir_p "cache"
+				File.write("cache/cachedpage#{@options[:cache_file]}", result);
+			end
+
+			return result
+
 		end
 	end
 
 	class Row
-		attr_accessor :extra_classes
+		attr_accessor :extra_classes, :style
 
 		def initialize(page, anchors, options)
 			@columns = []
 			@free = 12
 			@extra_classes = options[:class] || ""
+			@style = options[:style]
 			@anchors = anchors
 			@page = page
 		end
@@ -1559,8 +1824,20 @@ $(document).ready(function () {
 				md = col[:options][:md] || col[:occupy]
 				lg = col[:options][:lg] || col[:occupy]
 
+				hidden = ""
+
+				xs_style = "col-xs-#{xs}" unless col[:options][:xs] == 0
+				sm_style = "col-sm-#{sm}" unless col[:options][:sm] == 0
+				md_style = "col-md-#{md}" unless col[:options][:md] == 0
+				lg_style = "col-lg-#{lg}" unless col[:options][:lg] == 0
+
+				hidden += "hidden-xs " if col[:options][:xs] == 0
+				hidden += "hidden-sm " if col[:options][:sm] == 0
+				hidden += "hidden-md " if col[:options][:md] == 0
+				hidden += "hidden-lg " if col[:options][:lg] == 0
+
 				<<-ENDCOLUMN
-		<div class="col-xs-#{xs} col-sm-#{sm} col-md-#{md} col-lg-#{lg}">
+		<div class="#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}">
 			#{col[:elem].generate}
 		</div>
 				ENDCOLUMN
@@ -1574,23 +1851,22 @@ $(document).ready(function () {
 			@items = []
 		end
 
-		def nav(name, icon=:question, url=nil, &block)
-			if url 
-				@items << { name: name, link: url, icon: icon }
-			else
-				@items << { name: name, link: "#", icon: icon }
-			end
-			if block
+		def nav(name, icon=:question, url=nil, options={}, &block)
+			if url and !block
+				@items << { name: name, link: url, icon: icon, options: options }
+			elsif block
 				menu = Menu.new
 				menu.instance_eval(&block)
-				@items << { name: name, menu: menu, icon: icon }
+				@items << { name: name, menu: menu, icon: icon, options: options }
+			else
+				@items << { name: name, link: "#", icon: icon, options: options }
 			end
 		end
 	end
 
 	class StructuredPage < Page
 
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			@rows = []
 			super
 		end
@@ -1608,7 +1884,7 @@ $(document).ready(function () {
 	end
 
 	class NavPage < StructuredPage
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			super
 			@menu = Menu.new
 		end
@@ -1625,14 +1901,15 @@ $(document).ready(function () {
 	end
 
 	class SideNavPage < NavPage
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
 		def generate(level)
+			instance_eval &@block
 			rows = @rows.map { |row|
 				<<-ENDROW
-	<div class="row #{row.extra_classes}">
+	<div class="row #{row.extra_classes}" style="#{row.style}">
 #{row.generate}
 	</div>
 				ENDROW
@@ -1644,11 +1921,10 @@ $(document).ready(function () {
 			navigation.instance_eval do
 
 				menu.items.each do |item|
-					li do
+					li item[:options] do
 						if item.has_key? :menu
 
-
-							a href:"#" do
+							a href:"#{item[:link]}" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -1660,17 +1936,23 @@ $(document).ready(function () {
 
             				ul :class => "nav nav-second-level" do
             					item[:menu].items.each do |inneritem|
-            						li do
+            						li inneritem[:options] do
             							if inneritem.has_key?(:menu)
             								raise "Second level menu not supported"
             							else
-                							link inneritem[:name], href:inneritem[:link]
+											a href:"#{inneritem[:link]}" do
+												icon inneritem[:icon]
+												span :class => "nav-label" do
+													text inneritem[:name]
+												end
+											end
             							end
             						end
             					end
                     		end
 						elsif
-							a href: "#" do
+							a href: "#{item[:link]}" do
+								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
 								end
@@ -1687,7 +1969,7 @@ $(document).ready(function () {
 				brand_content = <<-BRAND_CONTENT
 
 	                <li>
-	                    <a href="#"><i class="fa fa-home"></i> <span class="nav-label">X</span> <span class="label label-primary pull-right"></span></a>
+	                    <a href="#{root}"><i class="fa fa-home"></i> <span class="nav-label">#{@brand}</span> <span class="label label-primary pull-right"></span></a>
 	                </li>
 				BRAND_CONTENT
 			end
@@ -1728,14 +2010,15 @@ $(document).ready(function () {
 	end
 
 	class TopNavPage < NavPage
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
 		def generate(level)
+			instance_eval &@block
 			rows = @rows.map { |row|
 				<<-ENDROW
-	<div class="row #{row.extra_classes}">
+	<div class="row #{row.extra_classes}" style="#{row.style}">
 #{row.generate}
 	</div>
 				ENDROW
@@ -1750,7 +2033,7 @@ $(document).ready(function () {
 			navigation.instance_eval do
 
 				menu.items.each do |item|
-					li do
+					li item[:options] do
 						if item.has_key? :menu
 
                     		li :class => "dropdown" do
@@ -1769,7 +2052,7 @@ $(document).ready(function () {
                     			end
                 				ul role: "menu", :class => "dropdown-menu" do
                 					item[:menu].items.each do |inneritem|
-                						li do
+                						li inneritem[:options] do
                 							if inneritem.has_key?(:menu)
                 								raise "Second level menu not supported"
                 							else
@@ -1799,7 +2082,7 @@ $(document).ready(function () {
 
 				    <div class="navbar-header">
 
-						<a href="#" class="navbar-brand">X</a>
+						<a href="#{root}" class="navbar-brand">#{@brand}</a>
 		            </div>
 				BRAND_CONTENT
 			end
@@ -1846,11 +2129,12 @@ $(document).ready(function () {
 	end
 
 	class NonNavPage < StructuredPage
-		def initialize(title, options)
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
 		def generate(level)
+			instance_eval &@block
 			rows = @rows.map { |row|
 				<<-ENDROW
 	<div class="row #{row.extra_classes}">
@@ -1875,39 +2159,34 @@ $(document).ready(function () {
 	end
 
 	class RawPage < Page
-		def initialize(title, options)
-			@element = Elements.new(self, {})
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
-		def element=(value)
-			@element = value
-		end
-
-
 		def generate(back_folders, options={})
-			@element.generate
+
+			elem = Elements.new(self, {})
+			elem.instance_eval(&@block)
+
+			elem.generate
 		end
 
 	end
 
 	class EmptyPage < Page
-		def initialize(title, options)
-			@element = Elements.new(self, {})
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
-		def element=(value)
-			@element = value
-		end
-
 		def generate(level)
+			elem = Elements.new(self, {})
+			elem.instance_eval(&@block)
 			@body_class = "gray-bg"
 			@content = <<-CONTENT
 	<div id="wrapper">
 	        <div class="wrapper-content">
 	            <div class="container">
-#{@element.generate}
+#{elem.generate}
 	            </div>
 			</div>
 		</div>
@@ -1918,21 +2197,20 @@ $(document).ready(function () {
 
 
 	class CenterPage < Page
-		def initialize(title, options)
-			@element = Elements.new(self, {})
+		def initialize(title, global_settings, options, &block)
 			super
 		end
 
-		def element=(value)
-			@element = value
-		end
-
 		def generate(level)
+
+			elem = Elements.new(self, {})
+			elem.instance_eval(&@block)
+
 			@body_class = "gray-bg"
 			@content = <<-CONTENT
 	<div class="middle-box text-center animated fadeInDown">
 		<div>
-			#{@element.generate}
+			#{elem.generate}
 		</div>
 	</div>
 			CONTENT
@@ -1945,95 +2223,74 @@ $(document).ready(function () {
 		def initialize(file, options={})
 			@pages = {}
 			@file = file
-			@options = options
+			@global_settings = options
 
-			@options[:root] = @options[:root] || "/"
-			@options[:root] = "#{@options[:root]}/" unless @options[:root].end_with? "/"
+			@global_settings[:root] = @global_settings[:root] || "/"
+			@global_settings[:root] = "#{@global_settings[:root]}/" unless @global_settings[:root].end_with? "/"
 			instance_eval(File.read(file), file)
 		end
 
-		def center_page(path, title=nil, &block)
+		def center_page(path, title=nil, options={}, &block)
 
 			if title == nil
 				title = path
 				path = ""
 			end
 
-			p = CenterPage.new(title, @options)
-
-			elem = Elements.new(p, {})
-			elem.instance_eval(&block) if block
-
-			p.element=elem
-
+			p = CenterPage.new(title, @global_settings, options, &block)
 			@pages[path] = p
 		end
 
-		def sidenav_page(path, title=nil, &block)
+		def sidenav_page(path, title=nil, options={}, &block)
 
 			if title == nil
 				title = path
 				path = ""
 			end
 
-			p = SideNavPage.new(title, @options)
-			p.instance_eval(&block) if block
+			p = SideNavPage.new(title, @global_settings, options, &block)
 			@pages[path] = p
 		end
 
-		def topnav_page(path, title=nil, &block)
+		def topnav_page(path, title=nil, options={}, &block)
 
 			if title == nil
 				title = path
 				path = ""
 			end
 
-			p = TopNavPage.new(title, @options)
-			p.instance_eval(&block) if block
+			p = TopNavPage.new(title, @global_settings, options, &block)
 			@pages[path] = p
 		end
 
-		def nonnav_page(path, title=nil, &block)
+		def nonnav_page(path, title=nil, options={}, &block)
 
 			if title == nil
 				title = path
 				path = ""
 			end
 
-			p = NonNavPage.new(title, @options)
-			p.instance_eval(&block) if block
+			p = NonNavPage.new(title, @global_settings, options, &block)
 			@pages[path] = p
 		end
 		
 
-		def empty_page(path, title=nil, &block)
+		def empty_page(path, title=nil, options={}, &block)
 
 			if title == nil
 				title = path
 				path = ""
 			end
 
-			p = EmptyPage.new(title, @options)
-
-			elem = Elements.new(p, {})
-			elem.instance_eval(&block) if block
-
-			p.element=elem
-
+			p = EmptyPage.new(title, @global_settings, options, &block)
 			@pages[path] = p
 		end
 
-		def raw_page(path="", &block)
+		def raw_page(path="", options={}, &block)
 
 			# raw pages dont even have a title
 
-			p = RawPage.new("", @options)
-
-			elem = Elements.new(p, {})
-			elem.instance_eval(&block) if block
-
-			p.element=elem
-
+			p = RawPage.new("", @global_settings, options, &block)
 			@pages[path] = p
 		end
 
