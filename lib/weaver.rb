@@ -715,7 +715,7 @@ ENDROW
 
 		def generate_script
 
-			query_object_declaration = ''
+			query_object_declaration = '{}'
 			query_string = ""
 
 			if @query_object
