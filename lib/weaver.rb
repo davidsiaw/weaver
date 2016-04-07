@@ -1917,14 +1917,14 @@ $( document ).ready(function() {
 
 			menu = @menu
 
-			navigation = Elements.new(@page, @anchors)
+			navigation = Elements.new(self, @anchors)
 			navigation.instance_eval do
 
 				menu.items.each do |item|
 					li item[:options] do
 						if item.has_key? :menu
 
-							a href:"#{item[:link]}" do
+							link "#{item[:link]}" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -1940,7 +1940,7 @@ $( document ).ready(function() {
             							if inneritem.has_key?(:menu)
             								raise "Second level menu not supported"
             							else
-											a href:"#{inneritem[:link]}" do
+											link "#{inneritem[:link]}" do
 												icon inneritem[:icon]
 												span :class => "nav-label" do
 													text inneritem[:name]
@@ -1951,7 +1951,7 @@ $( document ).ready(function() {
             					end
                     		end
 						elsif
-							a href: "#{item[:link]}" do
+							link "#{item[:link]}" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -2056,7 +2056,7 @@ $( document ).ready(function() {
                 							if inneritem.has_key?(:menu)
                 								raise "Second level menu not supported"
                 							else
-	                							link inneritem[:name], href:inneritem[:link]
+	                							link inneritem[:link], inneritem[:name]
                 							end
                 						end
                 					end
