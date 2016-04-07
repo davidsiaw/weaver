@@ -122,7 +122,8 @@ where [options] are:
 		site.pages.each do |localPath, page|
 			resultPath = File.join(baseDir, localPath)
 
-			level = resultPath.split(/\//, 0).length
+			level = resultPath.split(/\//, 0).select{|x| x.length != 0}.length
+
 			puts "Writing: #{file} -> #{resultPath} (Level: #{level})"
 
 			fileName = File.join([buildDir, resultPath, "index.html"])
