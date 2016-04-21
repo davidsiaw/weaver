@@ -104,12 +104,12 @@ where [options] are:
 	end
 	if Dir.exist? "js"
 		Dir["js/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join("js", buildDir))
+			FileUtils.cp_r(x, File.join(buildDir, "js"))
 		end
 	end
 	if Dir.exist? "css"
 		Dir["css/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join("css", buildDir))
+			FileUtils.cp_r(x, File.join(buildDir, "css"))
 		end
 	end
 
