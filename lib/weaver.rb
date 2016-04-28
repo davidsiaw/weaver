@@ -353,7 +353,6 @@ ENDROW
 			type = :a if options[:toggle]
 
 
-
 			method_missing type, buttonOptions do
 				if title.is_a? Symbol
 					icon title
@@ -590,12 +589,19 @@ ENDROW
 
 	class DynamicTableCell < Elements
 
+		attr_accessor :transform_script
+
 		def data_button(anIcon, title={}, options={}, &block)
 			options[:icon] = anIcon
 			options[:title] = title
 			options[:data] = "$(this).closest('td').data('object')"
 			_button(options, &block)
 		end
+
+		def transform(script)
+			@transform_script = script
+		end
+
 	end
 
 	class JavaScriptObject
@@ -658,6 +664,7 @@ ENDROW
 
 			title = options[:title] || name
 			format = nil
+			transform = nil
 
 			if options[:icon]
         		elem = Elements.new(@page, @anchors)
@@ -672,9 +679,20 @@ ENDROW
         		elem = DynamicTableCell.new(@page, @anchors)
         		elem.instance_eval(&block)
 				format = elem.generate
+				if elem.transform_script
+					func_name = @page.create_anchor "transform"
+					@page.write_script_once <<-SCRIPT
+document.transform_#{func_name} = function (input)
+{
+#{elem.transform_script}
+}
+					SCRIPT
+
+					transform = func_name
+				end
 			end
 
-			@columns << {name: name, title: title, format: format}
+			@columns << {name: name, title: title, format: format, transform: transform}
 
 		end
 
@@ -723,15 +741,20 @@ ENDROW
 				query_string = "+ \"?\" + $.param(query_object)"
 			end
 
+			member_expr = ""
+			if @options[:member]
+				member_expr = ".#{@options[:member]}"
+			end
+
 			<<-DATATABLE_SCRIPT
 
 	function refresh_table_#{@table_name}()
 	{
 		var query_object = #{query_object_declaration};
 
-		$.get( "#{@url}" #{query_string}, function( data )
+		$.get( "#{@url}" #{query_string}, function( returned_data )
 		{
-
+			var data = returned_data#{member_expr};
 			var data_object = {};
 			if (data !== null && typeof data === 'object')
 			{
@@ -800,6 +823,7 @@ ENDROW
 					var row = $('<tr>');
 					for (var columnIndex = 0; columnIndex < Object.keys(columns).length; columnIndex++) {
 						var cell_data = data_object[index][ Object.keys(columns)[columnIndex] ];
+
 						if (columnData && columnData[columnIndex]["format"])
 						{
 							var format = columnData[columnIndex]["format"];
@@ -812,10 +836,18 @@ ENDROW
 								result = result.replaceAll(matches[matchIndex], data_object[index][member_name]);
 							}
 
+							if (columnData && columnData[columnIndex]["transform"])
+							{
+								result = document["transform_" + columnData[columnIndex]["transform"]](result);
+							}
 							row.append($('<td>').html( result ).data("object", data_object[index]) );
 						}
 						else
 						{
+							if (columnData && columnData[columnIndex]["transform"])
+							{
+								cell_data = document["transform_" + columnData[columnIndex]["transform"]](cell_data);
+							}
 							row.append($('<td>').text( cell_data ).data("object", data_object[index]) );
 						}
 					}
@@ -957,6 +989,58 @@ function #{@actionName}(caller, data) {
 		end
 	end
 
+	class TextfieldJavascript
+
+		def initialize(id)
+			@id = id
+		end
+
+		def onchange(script)
+			@change_script = script
+		end
+
+		def validate(script)
+			@validate_script = script
+		end
+
+		def generate(&block)
+			if block
+			instance_eval(&block)
+				<<-SCRIPT
+$("##{@id}").keyup(function()
+{
+	function validate()
+	{
+		#{@validate_script};
+		return true;
+	}
+
+	var object = $("##{@id}");
+	#{@change_script};
+
+	if (validate())
+	{
+		object.removeClass("required");
+		object.removeClass("error");
+		object.removeAttr("aria-invalid");
+	}
+	else
+	{
+		object.addClass("required");
+		object.addClass("error");
+		object.attr("aria-required", "true");
+		object.attr("aria-invalid", "true");
+	}
+})
+
+
+				SCRIPT
+			end
+
+		end
+
+	end
+
 	class Form < Elements
 		def initialize(page, anchors, options)
 			super(page, anchors)
@@ -966,7 +1050,7 @@ function #{@actionName}(caller, data) {
 			@formName = options[:id] || @page.create_anchor("form")
 		end
 
-		def passwordfield(name, textfield_label=nil, options={})
+		def passwordfield(name, textfield_label=nil, options={}, &block)
 
 			if textfield_label.is_a? Hash
 				options = textfield_label
@@ -974,17 +1058,17 @@ function #{@actionName}(caller, data) {
 			end
 
 			options[:type] = "password"
-			textfield(name, textfield_label, options)
+			textfield(name, textfield_label, options, &block)
 		end
 
-		def textfield(name, textfield_label=nil, options={})
+		def textfield(name, textfield_label=nil, options={}, &block)
 
 			if textfield_label.is_a? Hash
 				options = textfield_label
 				textfield_label = nil
 			end
 
-			textfield_name = @page.create_anchor "textfield"
+			textfield_name = options[:id] || @page.create_anchor("textfield")
 			options[:type] ||= "text"
 			options[:placeholder] ||= ""
 			options[:name] = name
@@ -1008,7 +1092,7 @@ function #{@actionName}(caller, data) {
 				input_options[:"data-mask"] = options[:mask]
 			end
 
-			div :class => "form-group" do
+			div :class => "form-group", id: "#{input_options[:id]}-group" do
 				label textfield_label if textfield_label
 				if input_options[:rows] and input_options[:rows] > 1
 					textarea input_options do
@@ -1018,11 +1102,31 @@ function #{@actionName}(caller, data) {
 				end
 			end
 
+			textjs = TextfieldJavascript.new(input_options[:id])
+
+			@page.on_page_load textjs.generate(&block) if block
+
 			@scripts << <<-SCRIPT
 	object["#{name}"] = $('##{textfield_name}').val();
 			SCRIPT
 		end
 
+		def hiddenfield(name, value, options={})
+			hiddenfield_name = options[:id] || @page.create_anchor("hiddenfield")
+
+			input_options = {}
+			input_options[:type] = "hidden"
+			input_options[:value] = value
+			input_options[:id] = hiddenfield_name
+			input_options[:name] = name
+
+			input input_options
+
+			@scripts << <<-SCRIPT
+	object["#{name}"] = $('##{hiddenfield_name}').val();
+			SCRIPT
+
+		end
 	
 		def dropdown(name, dropdown_label, choice_array, options={})
 			select_name = @page.create_anchor "select"
