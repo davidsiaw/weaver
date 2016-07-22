@@ -1080,6 +1080,7 @@ $("##{@id}").keyup(function()
 			input_options[:rows] = options[:rows]
 			input_options[:class] = "form-control"
 			input_options[:value] = options[:value]
+			input_options[:style] = options[:style]
 
 			input_options[:autocomplete] = options[:autocomplete] || "on"
 			input_options[:autocorrect] = options[:autocorrect] || "on"
@@ -1183,8 +1184,13 @@ $("##{@id}").keyup(function()
 				div :class => "input-group", style: "width: 100%" do
 
 					method_missing :select, form_options do
+
 						choice_array.each do |choice|
-							option choice
+							if options[:value] == choice
+								option choice, selected: selected
+							else
+								option choice
+							end
 						end
 					end
 				end
