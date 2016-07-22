@@ -1,7 +1,6 @@
 require "weaver/version"
 
 require 'fileutils'
-require 'sinatra'
 require 'json'
 require 'active_support/core_ext/object/to_query'
 
@@ -1080,6 +1079,7 @@ $("##{@id}").keyup(function()
 			input_options[:name] = options[:name]
 			input_options[:rows] = options[:rows]
 			input_options[:class] = "form-control"
+			input_options[:value] = options[:value]
 
 			input_options[:autocomplete] = options[:autocomplete] || "on"
 			input_options[:autocorrect] = options[:autocorrect] || "on"
@@ -1092,7 +1092,7 @@ $("##{@id}").keyup(function()
 				input_options[:"data-mask"] = options[:mask]
 			end
 
-			div :class => "form-group", id: "#{input_options[:id]}-group" do
+			div :class => "form-group #{options[:extra_class]}", id: "#{input_options[:id]}-group" do
 				label textfield_label if textfield_label
 				if input_options[:rows] and input_options[:rows] > 1
 					textarea input_options do
@@ -1228,26 +1228,36 @@ $("##{@id}").keyup(function()
 
 			radio_name = @page.create_anchor "radio"
 
-			first = true
+			choice_array = choice_array.map do |choice|
+				if choice.is_a? Hash
+					{value: choice[:value], label: choice[:label]}
+				else
+					{value: choice, label: choice}
+				end
+			end
+
+			active = choice_array[0][:value]
+			if options[:value] and choice_array.index { |x| x[:value] == options[:value] } != nil
+				active = options[:value]
+			end
+
 			choice_array.each do |choice|
 
-				value = choice
-				label = choice
-				if choice.is_a? Hash
-					value = choice[:value]
-					label = choice[:label]
-				end
+				value = choice[:value]
+				label = choice[:label]
 
 				the_options = Hash.new(options)
-				if first
+
+				if active == value
 					the_options[:checked] = ""
-					first = false
 				end
 				the_options[:type] = "radio"
 				the_options[:value] = value
 				the_options[:name] = name
 				text boolean_element(label, the_options)
 			end
+
+
 			@scripts << <<-SCRIPT
 	object["#{name}"] = $('input[name=#{name}]:checked', '##{@formName}').val()
 			SCRIPT
@@ -1328,6 +1338,7 @@ $(document).ready(function () {
 				}
 
 				form_opts[:action] = options[:action] if options[:action]
+				form_opts[:method] = options[:method] if options[:method]
 				form_opts[:class] = options[:class] if options[:class]
 
 				method_missing :form, form_opts do

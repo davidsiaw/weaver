@@ -2,6 +2,7 @@
 
 require 'weaver'
 require 'trollop'
+require 'sinatra/base'
 
 class Website < Sinatra::Base
 
@@ -95,7 +96,7 @@ where [options] are:
 	end
 
 	puts "Building site..."
-
+	
 	buildDir = "#{Dir.pwd}/build" 
 	FileUtils::rm_rf buildDir
 	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
