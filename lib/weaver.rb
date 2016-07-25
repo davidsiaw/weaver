@@ -1247,20 +1247,36 @@ $("##{@id}").keyup(function()
 				active = options[:value]
 			end
 
-			choice_array.each do |choice|
+			div_options = {}
+			curobject = self
+			if options[:form] == :button
+				div_options[:"data-toggle"] = "buttons"
+			end
+			div div_options do
+				choice_array.each do |choice|
 
-				value = choice[:value]
-				label = choice[:label]
+					value = choice[:value]
+					label = choice[:label]
 
-				the_options = Hash.new(options)
+					the_options = Hash.new(options)
 
-				if active == value
-					the_options[:checked] = ""
+					if active == value
+						the_options[:checked] = ""
+					end
+
+					if options[:form] == :button
+						the_options[:type] = "radio"
+						the_options[:value] = value
+						the_options[:name] = name
+						the_options[:form] = :button
+						text curobject.boolean_element(label, the_options)
+					else
+						the_options[:type] = "radio"
+						the_options[:value] = value
+						the_options[:name] = name
+						text curobject.boolean_element(label, the_options)
+					end
 				end
-				the_options[:type] = "radio"
-				the_options[:value] = value
-				the_options[:name] = name
-				text boolean_element(label, the_options)
 			end
 
 
@@ -1316,15 +1332,28 @@ $(document).ready(function () {
 });
 			SCRIPT
 
+			label_options = {}
 			elem = Elements.new(@page, @anchors)
 			elem.instance_eval do
-				div class: "i-checks" do
-					label do
-						input options do
-							text " #{checkbox_label}"
+
+				if options[:form] == :button
+					label class: "btn btn-primary btn-block btn-outline" do
+						input options
+						text "#{checkbox_label}"
+					end
+            #<label class="btn btn-primary btn-block active">
+            #  <input type="radio" name="options" id="option1" autocomplete="off" checked> Radio 1 (preselected)
+            #</label>
+				else
+					div class: "i-checks" do
+						label label_options do
+							input options do
+								text " #{checkbox_label}"
+							end
 						end
 					end
 				end
+
 			end
 
 			elem.generate
