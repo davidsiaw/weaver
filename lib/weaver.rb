@@ -21,7 +21,7 @@ module Weaver
 				inner = args.shift
 			end
 			if block
-				elem = Elements.new(@page, @anchors)
+				elem = self.class.new(@page, @anchors)
 				elem.instance_eval(&block)
 				inner = elem.generate
 			end
@@ -85,8 +85,7 @@ module Weaver
 		end
 
 		def wform(options={}, &block)
-        	theform = Form.new(@page, @anchors, options)
-        	theform.instance_eval(&block)
+        	theform = Form.new(@page, @anchors, options, &block)
         	@inner_content << theform.generate
         	@page.scripts << theform.generate_script
 		end
@@ -271,15 +270,80 @@ module Weaver
 		end
 
 		def row(options={}, &block)
-			r = Row.new(@page, @anchors, options)
-			r.instance_eval(&block)
-
-			@inner_content << <<-ENDROW
-	<div class="row">
-		#{r.generate}
-	</div>
-ENDROW
+			options[:class] = "row"
+			div options do
+				instance_eval(&block)
+			end
 		end
+
+		def twothirds(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 8,
+				lg: 8
+			}
+			col(4, opts, &block)
+		end
+
+		def half(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 12,
+				lg: 6
+			}
+			col(4, opts, &block)
+		end
+
+		def third(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 4,
+				lg: 4
+			}
+			col(4, opts, &block)
+		end
+
+		def quarter(&block)
+			opts =
+			{
+				xs: 12,
+				sm: 12,
+				md: 6,
+				lg: 3
+			}
+			col(3, opts, &block)
+		end
+
+		def col(occupies, options={}, &block)
+
+			xs = options[:xs] || occupies
+			sm = options[:sm] || occupies
+			md = options[:md] || occupies
+			lg = options[:lg] || occupies
+
+			hidden = ""
+
+			xs_style = "col-xs-#{xs}" unless options[:xs] == 0
+			sm_style = "col-sm-#{sm}" unless options[:sm] == 0
+			md_style = "col-md-#{md}" unless options[:md] == 0
+			lg_style = "col-lg-#{lg}" unless options[:lg] == 0
+
+			hidden += "hidden-xs " if options[:xs] == 0
+			hidden += "hidden-sm " if options[:sm] == 0
+			hidden += "hidden-md " if options[:md] == 0
+			hidden += "hidden-lg " if options[:lg] == 0
+
+			div class: "#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}" do 
+				instance_eval(&block)
+			end
+		end
+
 
 		def jumbotron(options={}, &block)
 
@@ -1031,22 +1095,19 @@ $("##{@id}").keyup(function()
 		object.attr("aria-invalid", "true");
 	}
 })
-
-
 				SCRIPT
 			end
-
 		end
-
 	end
 
-	class Form < Elements
-		def initialize(page, anchors, options)
+	class FormElements < Elements
+
+		attr_accessor :options, :scripts
+
+		def initialize(page, anchors, options={})
 			super(page, anchors)
 			@options = options
 			@scripts = []
-
-			@formName = options[:id] || @page.create_anchor("form")
 		end
 
 		def passwordfield(name, textfield_label=nil, options={}, &block)
@@ -1130,8 +1191,7 @@ $("##{@id}").keyup(function()
 		end
 	
 		def dropdown(name, dropdown_label, choice_array, options={})
-			select_name = @page.create_anchor "select"
-
+			select_name = options[:id] || @page.create_anchor("select")
 
 			options[:class] = "form-control"
 			options[:name] = name
@@ -1186,8 +1246,8 @@ $("##{@id}").keyup(function()
 					method_missing :select, form_options do
 
 						choice_array.each do |choice|
-							if options[:value] == choice
-								option choice, selected: selected
+							if "#{options[:value]}" == "#{choice}"
+								option choice, selected: true
 							else
 								option choice
 							end
@@ -1283,11 +1343,10 @@ $("##{@id}").keyup(function()
 			@scripts << <<-SCRIPT
 	object["#{name}"] = $('input[name=#{name}]:checked', '##{@formName}').val()
 			SCRIPT
-			
 		end
 
 		def checkbox(name, checkbox_label, options={})
-			checkbox_name = @page.create_anchor "checkbox"
+			checkbox_name = options[:id] || @page.create_anchor("checkbox")
 			options[:type] = "checkbox"
 			options[:name] = name
 			options[:id] = checkbox_name
@@ -1305,17 +1364,6 @@ $("##{@id}").keyup(function()
 			options[:data] = "get_#{@formName}_object()"
 			options[:nosubmit] = true if block
 			_button(options, &block)
-		end
-
-		def generate_script
-			<<-SCRIPT
-function get_#{@formName}_object()
-{
-	var object = {}
-#{@scripts.join "\n"}
-	return object;
-}
-			SCRIPT
 		end
 
 		def boolean_element(checkbox_label, options={})
@@ -1358,11 +1406,33 @@ $(document).ready(function () {
 
 			elem.generate
 		end
+	end
+
+	class Form
+		def initialize(page, anchors, options={}, &block)
+
+			@formName = options[:id] || page.create_anchor("form")
+
+			@form_element = FormElements.new(page, anchors, options)
+
+			@form_element.instance_eval(&block)
+		end
+
+		def generate_script
+			<<-SCRIPT
+function get_#{@formName}_object()
+{
+	var object = {}
+#{@form_element.scripts.join "\n"}
+	return object;
+}
+			SCRIPT
+		end
 
 		def generate
-			inner = super
+			inner = @form_element.generate
 			formName = @formName
-			options = @options
+			options = @form_element.options
 
 			elem = Elements.new(@page, @anchors)
 			elem.instance_eval do
@@ -1900,7 +1970,7 @@ $( document ).ready(function() {
 		end
 	end
 
-	class Row
+	class Row < Elements
 		attr_accessor :extra_classes, :style
 
 		def initialize(page, anchors, options)
@@ -1912,51 +1982,6 @@ $( document ).ready(function() {
 			@page = page
 		end
 
-		def twothirds(&block)
-			opts =
-			{
-				xs: 12,
-				sm: 12,
-				md: 8,
-				lg: 8
-			}
-			col(4, opts, &block)
-		end
-
-		def half(&block)
-			opts =
-			{
-				xs: 12,
-				sm: 12,
-				md: 12,
-				lg: 6
-			}
-			col(4, opts, &block)
-		end
-
-		def third(&block)
-			opts =
-			{
-				xs: 12,
-				sm: 12,
-				md: 4,
-				lg: 4
-			}
-			col(4, opts, &block)
-		end
-
-		def quarter(&block)
-			opts =
-			{
-				xs: 12,
-				sm: 12,
-				md: 6,
-				lg: 3
-			}
-			col(3, opts, &block)
-		end
-
-
 		def col(occupies, options={}, &block)
 			raise "Not enough columns!" if @free < occupies
 			elem = Elements.new(@page, @anchors)
@@ -1967,6 +1992,7 @@ $( document ).ready(function() {
 		end
 
 		def generate
+
 			@columns.map { |col|
 
 				xs = col[:options][:xs] || col[:occupy]
@@ -2030,6 +2056,7 @@ $( document ).ready(function() {
 			r.instance_eval(&block)
 			@rows << r
 		end
+
 
 	end
 
