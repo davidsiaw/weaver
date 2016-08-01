@@ -339,7 +339,12 @@ module Weaver
 			hidden += "hidden-md " if options[:md] == 0
 			hidden += "hidden-lg " if options[:lg] == 0
 
-			div class: "#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}" do 
+			div_options = {
+				class: "#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}",
+				style: options[:style]
+			}
+
+			div div_options do 
 				instance_eval(&block)
 			end
 		end
@@ -1385,6 +1390,7 @@ $(document).ready(function () {
 			elem.instance_eval do
 
 				if options[:form] == :button
+					options.delete(:form)
 					label class: "btn btn-primary btn-block btn-outline" do
 						input options
 						text "#{checkbox_label}"
@@ -1456,7 +1462,7 @@ function get_#{@formName}_object()
 	end
 
 	class Panel < Elements
-		def initialize(page, anchors, options)
+		def initialize(page, anchors, options={})
 			super(page, anchors)
 			@title = nil
 			@footer = nil
