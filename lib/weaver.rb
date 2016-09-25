@@ -1914,10 +1914,11 @@ function get_#{@formName}_object()
     <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
 
-#{extra_css}
-
     #{style}
+
     <link href="#{mod}css/animate.css" rel="stylesheet">
+    
+#{extra_css}
     
 </head>
 
