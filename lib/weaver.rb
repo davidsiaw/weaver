@@ -21,7 +21,7 @@ module Weaver
 				inner = args.shift
 			end
 			if block
-				elem = self.class.new(@page, @anchors)
+				elem = Elements.new(@page, @anchors)
 				elem.instance_eval(&block)
 				inner = elem.generate
 			end
@@ -1476,6 +1476,8 @@ function get_#{@formName}_object()
 
 		def generate
 			inner = super
+
+			puts "IBOX #{caller.join("\n")}"
 
         	types =
         	{
