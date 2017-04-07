@@ -96,6 +96,20 @@ module Weaver
         	@inner_content << panel.generate
         end
 
+        def center(content=nil, options={}, &block)
+
+        	if !options[:style]
+        		options[:style] = ""
+        	end
+
+        	options[:style] += "; text-align: center;"
+        	if !content
+        		div options, &block
+        	else
+        		div content, options, &block
+        	end
+        end
+
         def panel(title, &block)
         	div class: "panel panel-default" do
         		div class: "panel-heading" do
@@ -1075,18 +1089,23 @@ function #{@actionName}(caller, data) {
 			if block
 			instance_eval(&block)
 				<<-SCRIPT
-$("##{@id}").keyup(function()
+
+if (!document.validators)
 {
-	function validate()
-	{
+	document.validators = {};
+}
+
+document.validators["##{@id}"] = function()
+{
+	var valid = function(data) {
 		#{@validate_script};
 		return true;
-	}
+	}($("##{@id}").val());
 
 	var object = $("##{@id}");
 	#{@change_script};
 
-	if (validate())
+	if (valid)
 	{
 		object.removeClass("required");
 		object.removeClass("error");
@@ -1099,7 +1118,12 @@ $("##{@id}").keyup(function()
 		object.attr("aria-required", "true");
 		object.attr("aria-invalid", "true");
 	}
-})
+}
+
+$("##{@id}").keyup(function() { document.validators["##{@id}"](); })
+$("##{@id}").blur(function() { document.validators["##{@id}"](); })
+$("##{@id}").focusout(function() { document.validators["##{@id}"](); })
+
 				SCRIPT
 			end
 		end
@@ -1109,8 +1133,9 @@ $("##{@id}").keyup(function()
 
 		attr_accessor :options, :scripts
 
-		def initialize(page, anchors, options={})
+		def initialize(page, anchors, formName, options={})
 			super(page, anchors)
+			@formName = formName
 			@options = options
 			@scripts = []
 		end
@@ -1161,12 +1186,22 @@ $("##{@id}").keyup(function()
 
 			div :class => "form-group #{options[:extra_class]}", id: "#{input_options[:id]}-group" do
 				label textfield_label if textfield_label
-				if input_options[:rows] and input_options[:rows] > 1
-					textarea input_options do
+
+					div_class = " "
+					if options[:front_text] || options[:back_text]
+						div_class = "input-group m-b"
 					end
-				else
-					input input_options
-				end
+
+					div :"class" => div_class do
+						span "#{options[:front_text]}", class: "input-group-addon" if options[:front_text]
+						if input_options[:rows] and input_options[:rows] > 1
+							textarea input_options do
+							end
+						else
+							input input_options
+						end
+						span "#{options[:back_text]}", class: "input-group-addon" if options[:back_text]
+					end
 			end
 
 			textjs = TextfieldJavascript.new(input_options[:id])
@@ -1395,9 +1430,6 @@ $(document).ready(function () {
 						input options
 						text "#{checkbox_label}"
 					end
-            #<label class="btn btn-primary btn-block active">
-            #  <input type="radio" name="options" id="option1" autocomplete="off" checked> Radio 1 (preselected)
-            #</label>
 				else
 					div class: "i-checks" do
 						label label_options do
@@ -1419,7 +1451,7 @@ $(document).ready(function () {
 
 			@formName = options[:id] || page.create_anchor("form")
 
-			@form_element = FormElements.new(page, anchors, options)
+			@form_element = FormElements.new(page, anchors, @formName, options)
 
 			@form_element.instance_eval(&block)
 		end
@@ -1476,8 +1508,6 @@ function get_#{@formName}_object()
 
 		def generate
 			inner = super
-
-			puts "IBOX #{caller.join("\n")}"
 
         	types =
         	{
@@ -2110,7 +2140,7 @@ $( document ).ready(function() {
 					li item[:options] do
 						if item.has_key? :menu
 
-							link "#{item[:link]}" do
+							link "/#" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -2120,7 +2150,9 @@ $( document ).ready(function() {
 								end
 							end
 
-            				ul :class => "nav nav-second-level" do
+							open = ""
+							open = "collapse in" if item[:options][:open]
+            				ul :class => "nav nav-second-level #{open}" do
             					item[:menu].items.each do |inneritem|
             						li inneritem[:options] do
             							if inneritem.has_key?(:menu)
