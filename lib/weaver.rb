@@ -224,8 +224,7 @@ module Weaver
 			end
 		end
 
-
-		def link(url, title=nil, &block)
+		def hyperlink(url, title=nil, &block)
 			if !title
 				title = url
 			end
@@ -2140,7 +2139,7 @@ $( document ).ready(function() {
 					li item[:options] do
 						if item.has_key? :menu
 
-							link "/#" do
+							hyperlink "/#" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -2158,7 +2157,7 @@ $( document ).ready(function() {
             							if inneritem.has_key?(:menu)
             								raise "Second level menu not supported"
             							else
-											link "#{inneritem[:link]}" do
+											hyperlink "#{inneritem[:link]}" do
 												icon inneritem[:icon]
 												span :class => "nav-label" do
 													text inneritem[:name]
@@ -2169,7 +2168,7 @@ $( document ).ready(function() {
             					end
                     		end
 						elsif
-							link "#{item[:link]}" do
+							hyperlink "#{item[:link]}" do
 								icon item[:icon]
 								span :class => "nav-label" do
 									text item[:name]
@@ -2274,14 +2273,14 @@ $( document ).ready(function() {
                 							if inneritem.has_key?(:menu)
                 								raise "Second level menu not supported"
                 							else
-	                							link inneritem[:link], inneritem[:name]
+	                							hyperlink inneritem[:link], inneritem[:name]
                 							end
                 						end
                 					end
                 				end
                     		end
 						elsif
-							link "#{item[:link]}" do
+							hyperlink "#{item[:link]}" do
 								span :class => "nav-label" do
 									icon item[:icon]
 									text item[:name]
