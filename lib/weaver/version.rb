@@ -1,3 +1,3 @@
 module Weaver
-  VERSION = "0.5.3"
+  VERSION = "2.0.0"
 end

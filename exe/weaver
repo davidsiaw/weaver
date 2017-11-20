@@ -155,18 +155,14 @@ gem 'weaver', '~> #{Weaver::VERSION}'
 	GEMFILE
 
 	source = <<-SOURCE
-topnav_page "", "My first weaver page" do
-	header do
-		col 12 do
-			h1 "Main page"
-
+page do
+	html do
+		head do
+			title "My first page"
 		end
-	end
 
-	row do
-		col 12 do
-			h2 "Examples"
-			p "Some content"
+		body do
+			para "Hello web"
 		end
 	end
 end
