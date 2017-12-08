@@ -10,6 +10,7 @@ module Weaver
 			@options = options
 			@anchors = {}
 			@doctype = :html5
+			@outer_self = options[:outer_self]
 
 			@block = Proc.new &block
 		end
@@ -66,7 +67,7 @@ module Weaver
 				puts "- cache_exist: #{cache_exist}"
 			end
 
-			elem = Elements.new(self, @anchors, folder_level)
+			elem = Elements.new(self, @anchors, folder_level, @outer_self)
 			elem.instance_eval(&@block)
 
 			@content = elem.generate

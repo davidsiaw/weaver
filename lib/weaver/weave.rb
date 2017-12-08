@@ -15,10 +15,9 @@ module Weaver
 		end
 
 		def page(path="", options={}, &block)
-
+			options[:outer_self] = self
 			p = Page.new(@global_settings, options, &block)
 			@pages[path] = p
 		end
-
 	end
 end
