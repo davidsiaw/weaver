@@ -49,7 +49,7 @@ module Weaver
 		end
 
 		def request_js(path)
-			@page.request_js(script_file)
+			@page.request_js(path)
 		end
 
 		def request_css(path)
