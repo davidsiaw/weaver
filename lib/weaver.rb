@@ -1970,6 +1970,7 @@ function get_#{@formName}_object()
     <script src="#{mod}js/bootstrap.min.js"></script>
     <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
 
 #{extra_scripts}
 
