@@ -7,7 +7,7 @@ require 'sinatra/base'
 class Website < Sinatra::Base
 
 	set :static, true 							# set up static file routing
-	set :public_folder, Gem.datadir("weaver")	# set up the static dir (with images/js/css inside)
+	set :public_folder, File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver")	# set up the static dir (with images/js/css inside)
 	set :bind, '0.0.0.0'
 
 	def getWeavefile(viewname)
@@ -99,7 +99,7 @@ where [options] are:
 	
 	buildDir = "#{Dir.pwd}/build" 
 	FileUtils::rm_rf buildDir
-	FileUtils.cp_r(Gem.datadir("weaver"), buildDir)
+	FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver"), buildDir)
 	if Dir.exist? "images"
 		FileUtils.cp_r("images", buildDir)
 	end
