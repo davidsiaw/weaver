@@ -1908,7 +1908,7 @@ function get_#{@formName}_object()
 			body_tag = "<body class='#{@body_class}'>" if @body_class
 
 			loading_bar = ""
-			loading_bar = '<script src="#{mod}js/plugins/pace/pace.min.js"></script>' if @loading_bar_visible
+			loading_bar = "<script src='#{mod}js/plugins/pace/pace.min.js'></script>" if @loading_bar_visible
 
 			extra_scripts = @requested_scripts.map {|key,value| <<-SCRIPT_DECL
     <script src="#{mod}#{key}"></script>
@@ -1965,7 +1965,7 @@ function get_#{@formName}_object()
 </div>
 
     <!-- Mainly scripts -->
-    <script src="#{mod}js/jquery-2.1.1.js"></script>
+    <script src="#{mod}js/jquery-3.1.1.min.js"></script>
     <script src="#{mod}js/jquery-ui-1.10.4.min.js"></script>
     <script src="#{mod}js/bootstrap.min.js"></script>
     <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>

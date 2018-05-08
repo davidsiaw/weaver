@@ -3885,7 +3885,7 @@ img.circle-border {
   cursor: move;
 }
 .breadcrumb {
-  background-color: #ffffff;
+  background-color: transparent;
   padding: 0;
   margin-bottom: 0;
 }
