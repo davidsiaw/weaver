@@ -1977,7 +1977,7 @@ function get_#{@formName}_object()
 
 
     <!-- Custom and plugin javascript -->
-    <script src="#{mod}js/inspinia.js"></script>
+    <script src="#{mod}js/weaver.js"></script>
     #{loading_bar}
 
     <script>
