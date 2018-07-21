@@ -2288,10 +2288,57 @@ $( document ).ready(function() {
 								end
 							end
 						end
-					end
+					end if item[:options][:position] != :right
 				end
 
 			end
+
+			navigation_right = Elements.new(self, @anchors)
+			navigation_right.instance_eval do
+
+				menu.items.each do |item|
+					li item[:options] do
+						if item.has_key? :menu
+
+                    		li :class => "dropdown" do
+                    			a :"aria-expanded" => "false", 
+                    				role: "button", 
+                    				href: "#", 
+                    				:class => "dropdown-toggle", 
+                    				:"data-toggle" => "dropdown" do
+
+									icon item[:icon]
+                    				text item[:name]
+                    				span :class => "caret" do
+                    					text ""
+                    				end
+
+                    			end
+                				ul role: "menu", :class => "dropdown-menu" do
+                					item[:menu].items.each do |inneritem|
+                						li inneritem[:options] do
+                							if inneritem.has_key?(:menu)
+                								raise "Second level menu not supported"
+                							else
+	                							hyperlink inneritem[:link], inneritem[:name]
+                							end
+                						end
+                					end
+                				end
+                    		end
+						elsif
+							hyperlink "#{item[:link]}" do
+								span :class => "nav-label" do
+									icon item[:icon]
+									text item[:name]
+								end
+							end
+						end
+					end if item[:options][:position] == :right
+				end
+
+			end
+
 
 			brand_content = "" 
 
@@ -2323,7 +2370,7 @@ $( document ).ready(function() {
 #{navigation.generate}
 		                </ul>
 		                <ul class="nav navbar-top-links navbar-right">
-		                	<!-- NAV RIGHT -->
+#{navigation_right.generate}
 		                </ul>
 		            </div>
 
