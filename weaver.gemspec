@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "activesupport"
-  spec.add_dependency "sinatra"
+  spec.add_dependency "sinatra", "~> 2.0.3"
   spec.add_dependency "trollop"
 
   spec.add_development_dependency "bundler", "~> 1.9"
