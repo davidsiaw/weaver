@@ -1,7 +1,7 @@
 #!/usr/bin/exec ruby
 
 require 'weaver'
-require 'trollop'
+require 'optimist'
 require 'sinatra/base'
 
 class Website < Sinatra::Base
@@ -84,7 +84,7 @@ end
 
 def build!(args)
 
-	opts = Trollop::options do
+	opts = Optimist::options do
 		banner <<-EOS
 Generate website
 
