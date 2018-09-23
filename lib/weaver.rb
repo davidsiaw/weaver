@@ -520,6 +520,7 @@ module Weaver
 			table_name = options[:id] || @page.create_anchor("table")
 			table_style = ""
 
+
 			if options[:style] != nil
 				table_style = options[:style]
 			end
@@ -529,6 +530,12 @@ module Weaver
 			classname += " table-bordered" if options[:bordered]
 			classname += " table-hover" if options[:hover]
 			classname += " table-striped" if options[:striped]
+
+			table_options = {
+				class: classname,
+				id: table_name,
+				style: table_style
+			}
 
 			if options[:system] == :data_table
 				@page.request_js "js/plugins/dataTables/jquery.dataTables.js"
@@ -546,7 +553,13 @@ module Weaver
 			end
 
 			if options[:system] == :foo_table
-				classname += " toggle-arrow-tiny"
+				input type: "text", class: "form-control input-sm m-b-xs", id: "#{table_name}_filter", placeholder: "Search in table"
+
+				table_options[:"data-filter"] = "##{table_name}_filter"
+				table_options[:"data-page-size"] = "#{options[:max_items_per_page].to_i || 8}"
+				table_options[:class] = table_options[:class] + " toggle-arrow-tiny"
+
+
 				@page.request_js "js/plugins/footable/footable.all.min.js"
 
 				@page.request_css "css/plugins/footable/footable.core.css"
@@ -557,7 +570,8 @@ module Weaver
 			end
 
 
-			method_missing(:table, :class => classname, id: table_name, style: table_style, &block)
+			method_missing(:table, table_options, &block)
+			ul class: "pagination"
 		end
 
 		def table_from_source(url, options={}, &block)
