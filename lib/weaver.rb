@@ -559,7 +559,7 @@ module Weaver
 				table_options[:"data-show-toggle"] = true
 				table_options[:"data-toggle-column"] = "last"
 
-				table_options[:"data-paging-size"] = "#{options[:max_items_per_page].to_i || 8}"
+				table_options[:"data-paging-size"] = "#{(options[:max_items_per_page] || 8).to_i}"
 				table_options[:class] = table_options[:class] + " toggle-arrow-tiny"
 
 
@@ -570,7 +570,7 @@ module Weaver
 				@page.scripts << <<-DATATABLE_SCRIPT
 		$('##{table_name}').footable({
 			paging: {
-				size: #{options[:max_items_per_page].to_i || 8}
+				size: #{(options[:max_items_per_page] || 8).to_i}
 			}
 		});
 		$('##{table_name}').append(this.html).trigger('footable_redraw');
