@@ -514,6 +514,10 @@ module Weaver
 			_button(options, &block)
 		end
 
+		def math(string)
+			text "$$$MATH$$$#{string}$$$ENDMATH$$$"
+		end
+
 		def table(options={}, &block)
 
 
@@ -2032,10 +2036,16 @@ mixpanel.init("'+@global_settings[:mixpanel_token]+'");</script><!-- end Mixpane
     <script src="#{mod}js/bootstrap.min.js"></script>
     <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+	<script type="text/x-mathjax-config">
+		MathJax.Hub.Config({
+			asciimath2jax: {
+				delimiters: [['$$$MATH$$$','$$$ENDMATH$$$']]
+			}
+		});
+	</script>
     <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
 
 #{extra_scripts}
-
 
 
     <!-- Custom and plugin javascript -->
