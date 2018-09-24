@@ -553,10 +553,13 @@ module Weaver
 			end
 
 			if options[:system] == :foo_table
-				input type: "text", class: "form-control input-sm m-b-xs", id: "#{table_name}_filter", placeholder: "Search in table"
+				table_options[:"data-filtering"] = true
+				table_options[:"data-sorting"] = true
+				table_options[:"data-paging"] = true
+				table_options[:"data-show-toggle"] = true
+				table_options[:"data-toggle-column"] = "last"
 
-				table_options[:"data-filter"] = "##{table_name}_filter"
-				table_options[:"data-page-size"] = "#{options[:max_items_per_page].to_i || 8}"
+				table_options[:"data-paging-size"] = "#{options[:max_items_per_page].to_i || 8}"
 				table_options[:class] = table_options[:class] + " toggle-arrow-tiny"
 
 
@@ -565,8 +568,19 @@ module Weaver
 				@page.request_css "css/plugins/footable/footable.core.css"
 
 				@page.scripts << <<-DATATABLE_SCRIPT
-		$('##{table_name}').footable();
+		$('##{table_name}').footable({
+			paging: {
+				size: #{options[:max_items_per_page].to_i || 8}
+			}
+		});
+		$('##{table_name}').append(this.html).trigger('footable_redraw');
+		
+
+
 				DATATABLE_SCRIPT
+
+				@page.onload_scripts << <<-SCRIPT
+				SCRIPT
 			end
 
 
