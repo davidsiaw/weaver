@@ -1993,6 +1993,20 @@ for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElemen
 mixpanel.init("'+@global_settings[:mixpanel_token]+'");</script><!-- end Mixpanel -->'
 			end
 
+			if @global_settings[:google_tracking_code]
+				extra_stuff += <<-GOOGLE
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=#{@global_settings[:google_tracking_code]}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', '#{@global_settings[:google_tracking_code]}');
+</script>
+				GOOGLE
+			end
+
 
 			result =<<-SKELETON
 <!DOCTYPE html>
