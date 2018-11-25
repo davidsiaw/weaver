@@ -1922,7 +1922,7 @@ function get_#{@formName}_object()
 		end
 
 		def top(&block)
-			elem = Elements.new(@page, @anchors)
+			elem = Elements.new(self, @anchors)
 			elem.instance_eval(&block)
 
 			@top_content = elem.generate

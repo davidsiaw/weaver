@@ -99,19 +99,22 @@ where [options] are:
 	puts "Building site..."
 	
 	buildDir = "#{Dir.pwd}/build" 
+
+	cp_r_options = {preserve: true}
+
 	FileUtils::rm_rf buildDir
-	FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver"), buildDir)
+	FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver"), buildDir, cp_r_options)
 	if Dir.exist? "images"
-		FileUtils.cp_r("images", buildDir)
+		FileUtils.cp_r("images", buildDir, cp_r_options)
 	end
 	if Dir.exist? "js"
 		Dir["js/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join(buildDir, "js"))
+			FileUtils.cp_r(x, File.join(buildDir, "js"), cp_r_options)
 		end
 	end
 	if Dir.exist? "css"
 		Dir["css/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join(buildDir, "css"))
+			FileUtils.cp_r(x, File.join(buildDir, "css"), cp_r_options)
 		end
 	end
 
