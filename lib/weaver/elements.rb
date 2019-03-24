@@ -239,13 +239,6 @@ module Weaver
       end
     end
 
-    def accordion(&block)
-      acc = Accordion.new(@page, @anchors)
-      acc.instance_eval(&block)
-
-      @inner_content << acc.generate
-    end
-
     def widget(options = {}, &block)
       # gray-bg
       # white-bg
@@ -259,85 +252,6 @@ module Weaver
       color = "#{options[:color]}-bg" || 'navy-bg'
 
       div class: "widget style1 #{color}", &block
-    end
-
-    def row(options = {}, &block)
-      options[:class] = 'row'
-      div options do
-        instance_eval(&block)
-      end
-    end
-
-    def twothirds(&block)
-      opts =
-        {
-          xs: 12,
-          sm: 12,
-          md: 8,
-          lg: 8
-        }
-      col(4, opts, &block)
-    end
-
-    def half(&block)
-      opts =
-        {
-          xs: 12,
-          sm: 12,
-          md: 12,
-          lg: 6
-        }
-      col(4, opts, &block)
-    end
-
-    def third(&block)
-      opts =
-        {
-          xs: 12,
-          sm: 12,
-          md: 4,
-          lg: 4
-        }
-      col(4, opts, &block)
-    end
-
-    def quarter(&block)
-      opts =
-        {
-          xs: 12,
-          sm: 12,
-          md: 6,
-          lg: 3
-        }
-      col(3, opts, &block)
-    end
-
-    def col(occupies, options = {}, &block)
-      xs = options[:xs] || occupies
-      sm = options[:sm] || occupies
-      md = options[:md] || occupies
-      lg = options[:lg] || occupies
-
-      hidden = ''
-
-      xs_style = "col-xs-#{xs}" unless options[:xs] == 0
-      sm_style = "col-sm-#{sm}" unless options[:sm] == 0
-      md_style = "col-md-#{md}" unless options[:md] == 0
-      lg_style = "col-lg-#{lg}" unless options[:lg] == 0
-
-      hidden += 'hidden-xs ' if options[:xs] == 0
-      hidden += 'hidden-sm ' if options[:sm] == 0
-      hidden += 'hidden-md ' if options[:md] == 0
-      hidden += 'hidden-lg ' if options[:lg] == 0
-
-      div_options = {
-        class: "#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}",
-        style: options[:style]
-      }
-
-      div div_options do
-        instance_eval(&block)
-      end
     end
 
     def jumbotron(options = {}, &block)
@@ -358,11 +272,6 @@ module Weaver
       end
 
       div class: 'jumbotron', style: additional_style, &block
-    end
-
-    def modal(id = nil, &block)
-      mm = ModalDialog.new(@page, @anchors, id, &block)
-      @inner_content << mm.generate
     end
 
     def _button(options = {}, &block)
@@ -488,108 +397,6 @@ module Weaver
 
     def math(string)
       text "$$$MATH$$$#{string}$$$ENDMATH$$$"
-    end
-
-    def table(options = {}, &block)
-      table_name = options[:id] || @page.create_anchor('table')
-      table_style = ''
-
-      table_style = options[:style] unless options[:style].nil?
-
-      classname = 'table'
-
-      classname += ' table-bordered' if options[:bordered]
-      classname += ' table-hover' if options[:hover]
-      classname += ' table-striped' if options[:striped]
-
-      table_options = {
-        class: classname,
-        id: table_name,
-        style: table_style
-      }
-
-      if options[:system] == :data_table
-        @page.request_js 'js/plugins/dataTables/jquery.dataTables.js'
-        @page.request_js 'js/plugins/dataTables/dataTables.bootstrap.js'
-        @page.request_js 'js/plugins/dataTables/dataTables.responsive.js'
-        @page.request_js 'js/plugins/dataTables/dataTables.tableTools.min.js'
-
-        @page.request_css 'css/plugins/dataTables/dataTables.bootstrap.css'
-        @page.request_css 'css/plugins/dataTables/dataTables.responsive.css'
-        @page.request_css 'css/plugins/dataTables/dataTables.tableTools.min.css'
-
-        @page.scripts << <<-DATATABLE_SCRIPT
-		$('##{table_name}').DataTable();
-        DATATABLE_SCRIPT
-      end
-
-      if options[:system] == :foo_table
-        table_options[:"data-filtering"] = true
-        table_options[:"data-sorting"] = true
-        table_options[:"data-paging"] = true
-        table_options[:"data-show-toggle"] = true
-        table_options[:"data-toggle-column"] = 'last'
-
-        table_options[:"data-paging-size"] = (options[:max_items_per_page] || 8).to_i.to_s
-        table_options[:class] = table_options[:class] + ' toggle-arrow-tiny'
-
-        @page.request_js 'js/plugins/footable/footable.all.min.js'
-
-        @page.request_css 'css/plugins/footable/footable.core.css'
-
-        @page.scripts << <<-DATATABLE_SCRIPT
-		$('##{table_name}').footable({
-			paging: {
-				size: #{(options[:max_items_per_page] || 8).to_i}
-			}
-		});
-		$('##{table_name}').append(this.html).trigger('footable_redraw');
-
-
-
-        DATATABLE_SCRIPT
-
-        @page.onload_scripts << <<-SCRIPT
-        				SCRIPT
-      end
-
-      method_missing(:table, table_options, &block)
-      ul class: 'pagination'
-    end
-
-    def table_from_source(url, options = {}, &block)
-      dyn_table = DynamicTable.new(@page, @anchors, url, options, &block)
-
-      text dyn_table.generate_table
-
-      @page.scripts << dyn_table.generate_script
-    end
-
-    def table_from_hashes(hashes, options = {})
-      keys = {}
-      hashes.each do |hash|
-        hash.each do |key, _value|
-          keys[key] = ''
-        end
-      end
-
-      table options do
-        thead do
-          keys.each do |key, _|
-            th key.to_s
-          end
-        end
-
-        tbody do
-          hashes.each do |hash|
-            tr do
-              keys.each do |key, _|
-                td (hash[key]).to_s || '&nbsp;'
-              end
-            end
-          end
-        end
-      end
     end
 
     def generate

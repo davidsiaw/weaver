@@ -1,5 +1,5 @@
 module Weaver
-
+  # Page that uses columns and rows
   class StructuredPage < Page
     def initialize(title, global_settings, options, &block)
       @rows = []
