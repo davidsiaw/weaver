@@ -5,160 +5,150 @@ require 'optimist'
 require 'sinatra/base'
 
 class Website < Sinatra::Base
+  set :static, true # set up static file routing
+  set :public_folder, File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver')	# set up the static dir (with images/js/css inside)
+  set :bind, '0.0.0.0'
+  set :port, ENV['PORT'] || 4567
 
-	set :static, true 							# set up static file routing
-	set :public_folder, File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver")	# set up the static dir (with images/js/css inside)
-	set :bind, '0.0.0.0'
-	set :port, ENV['PORT'] || 4567
+  def getWeavefile(viewname)
+    pathToFile = viewname.split('/').delete_if(&:empty?)
 
-	def getWeavefile(viewname)
+    viewFile = nil
 
-		pathToFile = viewname.split("/").delete_if(&:empty?)
+    remainingPath = []
 
-		viewFile = nil
+    loop do
+      path = "#{File.join(['source'] + pathToFile)}.weave"
+      indexPath = File.join(['source'] + pathToFile + ['index.weave'])
 
-		remainingPath = []
+      # puts path
+      # puts indexPath
 
-		loop do 
-			path = "#{File.join(['source'] + pathToFile)}.weave"
-			indexPath = File.join(["source"] + pathToFile + ["index.weave"])
+      viewFile = path if File.exist?(path)
+      viewFile = indexPath if File.exist?(indexPath)
 
-			#puts path
-			#puts indexPath
+      break if viewFile || pathToFile.empty?
 
-			viewFile = path if File.exists?(path)
-			viewFile = indexPath if File.exists?(indexPath)
+      remainingPath << pathToFile.last
 
-			break if viewFile or pathToFile.length == 0
+      pathToFile = pathToFile.first pathToFile.size - 1
+    end
 
-			remainingPath << pathToFile.last
+    { viewFile: viewFile, path: remainingPath }
+  end
 
-			pathToFile = pathToFile.first pathToFile.size-1
-		end 
+  get '/*' do
+    if params[:splat].first.start_with? 'images/'
+      return send_file(params[:splat].first, disposition: 'inline')
+    end
 
-		{ viewFile: viewFile, path: remainingPath }
-	end
+    if params[:splat].first.start_with? 'js/'
+      return send_file(params[:splat].first, disposition: 'inline')
+    end
 
-	get '/*' do
+    if params[:splat].first.start_with? 'css/'
+      return send_file(params[:splat].first, disposition: 'inline')
+    end
 
-		if params[:splat].first.start_with? "images/"
-			return send_file(params[:splat].first, :disposition => 'inline')
-		end
+    viewname = params[:splat].first
+    result = getWeavefile viewname
+    viewFile = result[:viewFile]
+    path = File.join(result[:path].reverse)
 
-		if params[:splat].first.start_with? "js/"
-			return send_file(params[:splat].first, :disposition => 'inline')
-		end
+    if viewFile
 
-		if params[:splat].first.start_with? "css/"
-			return send_file(params[:splat].first, :disposition => 'inline')
-		end
+      site = Weaver::Weave.new(viewFile)
 
+      if site.pages.key?(path)
 
-		viewname = params[:splat].first
-		result = getWeavefile viewname
-		viewFile = result[:viewFile]
-		path = File.join(result[:path].reverse)
+        level = viewname.split(%r{/}, 0).length
+        site.pages[path].generate(level)
 
-		if viewFile
-
-			site = Weaver::Weave.new(viewFile)
-
-			if site.pages.has_key?(path)
-
-				level = viewname.split(/\//, 0).length
-				site.pages[path].generate(level)
-
-			else
-				puts "Not found: #{viewname} in #{viewFile}"
-				puts "Path is: #{path}"
-				status 404
-			end
-		else
-			puts "Not found: #{viewname} in #{viewFile}"
-				puts "Path is: #{path}"
-			status 404
-		end
-	end
-
+      else
+        puts "Not found: #{viewname} in #{viewFile}"
+        puts "Path is: #{path}"
+        status 404
+      end
+    else
+      puts "Not found: #{viewname} in #{viewFile}"
+      puts "Path is: #{path}"
+      status 404
+    end
+  end
 end
 
-def build!(args)
-
-	opts = Optimist::options do
-		banner <<-EOS
+def build!(_args)
+  opts = Optimist.options do
+    banner <<-EOS
 Generate website
 
 Usage:
    weaver build [options]
 where [options] are:
-		EOS
+    EOS
 
-		opt :root, "The root URL to be used in links (e.g.) https://astrobunny.net", type: :string, default: "/"
-	end
+    opt :root, 'The root URL to be used in links (e.g.) https://astrobunny.net', type: :string, default: '/'
+  end
 
-	puts "Building site..."
-	
-	buildDir = "#{Dir.pwd}/build" 
+  puts 'Building site...'
 
-	cp_r_options = {preserve: true}
+  buildDir = "#{Dir.pwd}/build"
 
-	FileUtils::rm_rf buildDir
-	FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, "data", "weaver"), buildDir, cp_r_options)
-	if Dir.exist? "images"
-		FileUtils.cp_r("images", buildDir, cp_r_options)
-	end
-	if Dir.exist? "js"
-		Dir["js/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join(buildDir, "js"), cp_r_options)
-		end
-	end
-	if Dir.exist? "css"
-		Dir["css/*.*"].each do |x|
-			FileUtils.cp_r(x, File.join(buildDir, "css"), cp_r_options)
-		end
-	end
+  cp_r_options = { preserve: true }
 
-	files = Dir["source/**/*.weave"]
-	files.each do |file|
-		baseDir = file.chomp('.weave').chomp('index').sub(/^source\//, "")
+  FileUtils.rm_rf buildDir
+  FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver'), buildDir, cp_r_options)
+  FileUtils.cp_r('images', buildDir, cp_r_options) if Dir.exist? 'images'
+  if Dir.exist? 'js'
+    Dir['js/*.*'].each do |x|
+      FileUtils.cp_r(x, File.join(buildDir, 'js'), cp_r_options)
+    end
+  end
+  if Dir.exist? 'css'
+    Dir['css/*.*'].each do |x|
+      FileUtils.cp_r(x, File.join(buildDir, 'css'), cp_r_options)
+    end
+  end
 
-		site = Weaver::Weave.new(file, opts)
+  files = Dir['source/**/*.weave']
+  files.each do |file|
+    baseDir = file.chomp('.weave').chomp('index').sub(%r{^source/}, '')
 
-		site.pages.each do |localPath, page|
-			resultPath = File.join(baseDir, localPath)
+    site = Weaver::Weave.new(file, opts)
 
-			level = resultPath.split(/\//, 0).select{|x| x.length != 0}.length
+    site.pages.each do |localPath, page|
+      resultPath = File.join(baseDir, localPath)
 
-			puts "Writing: #{file} -> #{resultPath} (Level: #{level})"
+      level = resultPath.split(%r{/}, 0).reject(&:empty?).length
 
-			fileName = File.join([buildDir, resultPath, "index.html"])
-			FileUtils::mkdir_p File.dirname(fileName)
-			File.write(fileName, page.generate(level))
-		end
-	end
+      puts "Writing: #{file} -> #{resultPath} (Level: #{level})"
 
+      fileName = File.join([buildDir, resultPath, 'index.html'])
+      FileUtils.mkdir_p File.dirname(fileName)
+      File.write(fileName, page.generate(level))
+    end
+  end
 end
 
 def preview!
-	puts "Weaver Preview Mode in: #{Dir.pwd}"
+  puts "Weaver Preview Mode in: #{Dir.pwd}"
 
-	Website.run!
+  Website.run!
 end
 
 def create!(args)
+  if args.length != 1
+    puts 'Usage: weaver create <folder>'
+    return
+  end
 
-	if args.length != 1
-		puts "Usage: weaver create <folder>"
-		return
-	end
-
-	gemfile = <<-GEMFILE
+  gemfile = <<-GEMFILE
 source 'https://rubygems.org'
 
 gem 'weaver', '~> #{Weaver::VERSION}'
-	GEMFILE
+  GEMFILE
 
-	source = <<-SOURCE
+  source = <<-SOURCE
 topnav_page "", "My first weaver page" do
 	header do
 		col 12 do
@@ -174,25 +164,25 @@ topnav_page "", "My first weaver page" do
 		end
 	end
 end
-	SOURCE
+  SOURCE
 
-	to_create = "#{args[0]}"
-	FileUtils::mkdir_p "#{to_create}"
-	FileUtils::mkdir_p "#{to_create}/cache"
-	File.write("#{to_create}/cache/this_directory_is_used_by_weaver_as_a_cache","")
-	FileUtils::mkdir_p "#{to_create}/source"
-	FileUtils::mkdir_p "#{to_create}/images"
-	FileUtils::mkdir_p "#{to_create}/js"
-	FileUtils::mkdir_p "#{to_create}/css"
-	File.write "#{to_create}/Gemfile", gemfile
-	File.write "#{to_create}/source/index.weave", source
+  to_create = (args[0]).to_s
+  FileUtils.mkdir_p to_create.to_s
+  FileUtils.mkdir_p "#{to_create}/cache"
+  File.write("#{to_create}/cache/this_directory_is_used_by_weaver_as_a_cache", '')
+  FileUtils.mkdir_p "#{to_create}/source"
+  FileUtils.mkdir_p "#{to_create}/images"
+  FileUtils.mkdir_p "#{to_create}/js"
+  FileUtils.mkdir_p "#{to_create}/css"
+  File.write "#{to_create}/Gemfile", gemfile
+  File.write "#{to_create}/source/index.weave", source
 end
 
 command = ARGV.shift
-if command == "build"
-	build!(ARGV)
-elsif command == "create"
-	create!(ARGV)
+if command == 'build'
+  build!(ARGV)
+elsif command == 'create'
+  create!(ARGV)
 else
-	preview!
+  preview!
 end
