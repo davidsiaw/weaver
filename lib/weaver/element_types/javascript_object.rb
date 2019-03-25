@@ -1,5 +1,4 @@
 module Weaver
-
   class JavaScriptObject
     def initialize(&block)
       @object = {}

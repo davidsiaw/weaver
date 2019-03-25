@@ -1,5 +1,5 @@
 module Weaver
-
+  # Row element
   class Row < Elements
     attr_accessor :extra_classes, :style
 
@@ -15,38 +15,44 @@ module Weaver
     def col(occupies, options = {}, &block)
       raise 'Not enough columns!' if @free < occupies
 
-      elem = Elements.new(@page, @anchors)
-      elem.instance_eval(&block)
-
-      @columns << { occupy: occupies, elem: elem, options: options }
+      @columns << Column.new(occupies, @page, @anchors, options, &block)
       @free -= occupies
     end
 
     def generate
-      @columns.map do |col|
-        xs = col[:options][:xs] || col[:occupy]
-        sm = col[:options][:sm] || col[:occupy]
-        md = col[:options][:md] || col[:occupy]
-        lg = col[:options][:lg] || col[:occupy]
+      @columns.map(&:generate).join
+    end
+  end
 
-        hidden = ''
+  # Column element
+  class Column
+    attr_reader :width, :options, :elem
 
-        xs_style = "col-xs-#{xs}" unless col[:options][:xs] == 0
-        sm_style = "col-sm-#{sm}" unless col[:options][:sm] == 0
-        md_style = "col-md-#{md}" unless col[:options][:md] == 0
-        lg_style = "col-lg-#{lg}" unless col[:options][:lg] == 0
+    def initialize(width, page, anchors, options = {}, &block)
+      @width = width
+      @options = options
+      @elem = Elements.new(page, anchors)
+      @elem.instance_eval(&block)
+    end
 
-        hidden += 'hidden-xs ' if col[:options][:xs] == 0
-        hidden += 'hidden-sm ' if col[:options][:sm] == 0
-        hidden += 'hidden-md ' if col[:options][:md] == 0
-        hidden += 'hidden-lg ' if col[:options][:lg] == 0
+    def colsize(size)
+      options[size] || width
+    end
 
-        <<-ENDCOLUMN
-		<div class="#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}">
-			#{col[:elem].generate}
-		</div>
-        ENDCOLUMN
-      end.join
+    def style(size)
+      return "hidden-#{size} " if colsize(size).zero?
+
+      "col-#{size}-#{colsize(size)}"
+    end
+
+    def generate
+      styles = %i[xs sm md lg].map { |size| style(size) }.join(' ')
+
+      <<-ENDCOLUMN
+  <div class="#{styles}">
+    #{elem.generate}
+  </div>
+      ENDCOLUMN
     end
   end
 
@@ -104,31 +110,8 @@ module Weaver
     end
 
     def col(occupies, options = {}, &block)
-      xs = options[:xs] || occupies
-      sm = options[:sm] || occupies
-      md = options[:md] || occupies
-      lg = options[:lg] || occupies
-
-      hidden = ''
-
-      xs_style = "col-xs-#{xs}" unless options[:xs] == 0
-      sm_style = "col-sm-#{sm}" unless options[:sm] == 0
-      md_style = "col-md-#{md}" unless options[:md] == 0
-      lg_style = "col-lg-#{lg}" unless options[:lg] == 0
-
-      hidden += 'hidden-xs ' if options[:xs] == 0
-      hidden += 'hidden-sm ' if options[:sm] == 0
-      hidden += 'hidden-md ' if options[:md] == 0
-      hidden += 'hidden-lg ' if options[:lg] == 0
-
-      div_options = {
-        class: "#{xs_style} #{sm_style} #{md_style} #{lg_style} #{hidden}",
-        style: options[:style]
-      }
-
-      div div_options do
-        instance_eval(&block)
-      end
+      column = Column.new(occupies, @page, @anchors, options, &block)
+      text column.generate
     end
   end
 end

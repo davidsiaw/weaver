@@ -1,5 +1,4 @@
 module Weaver
-
   class FormElements < Elements
     attr_accessor :options, :scripts
 

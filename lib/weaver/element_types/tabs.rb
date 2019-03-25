@@ -1,5 +1,4 @@
 module Weaver
-
   class Tabs
     def initialize(page, anchors)
       @anchors = anchors

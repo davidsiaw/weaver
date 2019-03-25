@@ -1,5 +1,4 @@
 module Weaver
-
   class Action
     def initialize(page, anchors, &block)
       @page = page

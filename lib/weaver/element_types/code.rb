@@ -1,5 +1,4 @@
 module Weaver
-
   class Code
     def initialize(page, anchors, lang)
       @page = page

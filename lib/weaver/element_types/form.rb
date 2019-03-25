@@ -1,6 +1,5 @@
 require 'weaver/element_types/form_elements'
 module Weaver
-
   class Form
     def initialize(page, anchors, options = {}, &block)
       @formName = options[:id] || page.create_anchor('form')

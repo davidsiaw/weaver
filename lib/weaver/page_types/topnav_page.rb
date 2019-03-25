@@ -1,6 +1,5 @@
 require 'weaver/page_types/nav_page'
 module Weaver
-
   class TopNavPage < NavPage
     def initialize(title, global_settings, options, &block)
       super

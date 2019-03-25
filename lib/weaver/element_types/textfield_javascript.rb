@@ -1,5 +1,4 @@
 module Weaver
-
   class TextfieldJavascript
     def initialize(id)
       @id = id

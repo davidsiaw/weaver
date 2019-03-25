@@ -1,5 +1,4 @@
 module Weaver
-
   class Panel < Elements
     def initialize(page, anchors, options = {})
       super(page, anchors)
