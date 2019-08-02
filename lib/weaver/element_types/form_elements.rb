@@ -295,7 +295,7 @@ $(document).ready(function () {
     end
 
     def credit_card(options = {})
-      request_js 'js/plugins/skeuocard/javascripts/skeuocard.js'
+      request_js 'js/plugins/skeuocard/javascripts/skeuocard.min.js'
       request_js 'js/plugins/skeuocard/javascripts/vendor/cssua.min.js'
       request_css 'js/plugins/skeuocard/styles/skeuocard.css'
       request_css 'js/plugins/skeuocard/styles/skeuocard.reset.css'
