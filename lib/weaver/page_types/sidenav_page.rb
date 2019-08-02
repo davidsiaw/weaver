@@ -3,6 +3,12 @@ module Weaver
   class SideNavPage < NavPage
     def initialize(title, global_settings, options, &block)
       super
+      @body_class = "#{@body_class} fixed-sidebar"
+    end
+
+    def keep_icons_when_hidden
+      arr = @body_class.to_s.split(' ')
+      @body_class = arr.reject { |x| x == 'fixed-sidebar' }.join(' ')
     end
 
     def generate(level)
