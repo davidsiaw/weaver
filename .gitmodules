@@ -1,0 +1,3 @@
+[submodule "data/weaver/js/plugins/skeuocard"]
+	path = data/weaver/js/plugins/skeuocard
+	url = git@github.com:davidsiaw/skeuocard
