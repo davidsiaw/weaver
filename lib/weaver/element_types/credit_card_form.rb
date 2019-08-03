@@ -30,7 +30,7 @@ module Weaver
 
     def background_for_issuer_bin(network, bin, image)
       style <<~STYLE
-        .skeuocard.product-#{network}.issuer-#{bin} .face.front {
+        ##{card_input_name}.skeuocard.product-#{network}.issuer-#{bin} .face.front {
           background-image: url(#{@page.root}images/#{image});
         }
       STYLE
