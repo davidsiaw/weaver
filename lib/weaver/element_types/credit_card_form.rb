@@ -63,6 +63,29 @@ module Weaver
           nameInputSelector: '[name="#{card_input_name}_name"]',
           cvcInputSelector: '[name="#{card_input_name}_cvc"]'
         });
+
+        var #{card_input_name}_content_width = $('##{card_input_name}').width();
+        var #{card_input_name}_content_height = $('##{card_input_name}').height();
+        function resize_#{card_input_name}() {
+          var availableWidth = $('##{card_input_name}').parent().width();
+          var contentWidth = #{card_input_name}_content_width;
+          var contentHeight = #{card_input_name}_content_height;
+
+          var scale = Math.min(availableWidth, contentWidth) / contentWidth;
+          $("##{card_input_name}").css("transform","scale(" + scale + ")");
+          $("##{card_input_name}").css("transform-origin","top left");
+          $("##{card_input_name}").css("width", contentWidth * scale);
+          $("##{card_input_name}").css("height", contentHeight * scale);
+        }
+
+        var resize_#{card_input_name}_id;
+        $(window).resize( function() {
+          clearTimeout(resize_#{card_input_name}_id);
+          resize_#{card_input_name}_id = setTimeout(resize_#{card_input_name}, 500);
+        });
+
+        resize_#{card_input_name}();
+
       SCRIPT
     end
 
