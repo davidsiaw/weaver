@@ -211,6 +211,7 @@ module Weaver
     end
 
     def hyperlink(url, title = nil, &block)
+      url = url.dup
       title ||= url
 
       if url.start_with? '/'
