@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Raw oage with no html
   class RawPage < Page

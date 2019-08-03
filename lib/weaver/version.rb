@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
-  VERSION = '0.8.3'.freeze
+  VERSION = '0.8.3'
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Base page class
   class Page
@@ -112,14 +114,14 @@ module Weaver
       end.join "\n"
 
       extra_one_time_scripts = @scripts_once.map do |key, _value|
-        <<-SCRIPT_DECL
-#{key}
+        <<~SCRIPT_DECL
+          #{key}
         SCRIPT_DECL
       end.join "\n"
 
       onload_scripts = @onload_scripts.map do |value|
-        <<-SCRIPT_DECL
-#{value}
+        <<~SCRIPT_DECL
+          #{value}
         SCRIPT_DECL
       end.join "\n"
 
@@ -133,93 +135,93 @@ mixpanel.init("' + @global_settings[:mixpanel_token] + '");</script><!-- end Mix
       end
 
       if @global_settings[:google_tracking_code]
-        extra_stuff += <<-GOOGLE
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=#{@global_settings[:google_tracking_code]}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+        extra_stuff += <<~GOOGLE
+          <!-- Global site tag (gtag.js) - Google Analytics -->
+          <script async src="https://www.googletagmanager.com/gtag/js?id=#{@global_settings[:google_tracking_code]}"></script>
+          <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-  gtag('config', '#{@global_settings[:google_tracking_code]}');
-</script>
+            gtag('config', '#{@global_settings[:google_tracking_code]}');
+          </script>
         GOOGLE
       end
 
-      result = <<-SKELETON
-<!DOCTYPE html>
-<html>
-<!-- Generated using weaver: https://github.com/davidsiaw/weaver -->
-<head>
+      result = <<~SKELETON
+        <!DOCTYPE html>
+        <html>
+        <!-- Generated using weaver: https://github.com/davidsiaw/weaver -->
+        <head>
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>#{@title}</title>
+            <title>#{@title}</title>
 
-    <link href="#{mod}css/bootstrap.min.css" rel="stylesheet">
-    <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
-    <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
+            <link href="#{mod}css/bootstrap.min.css" rel="stylesheet">
+            <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
+            <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
 
-    #{style}
+            #{style}
 
-    <link href="#{mod}css/animate.css" rel="stylesheet">
+            <link href="#{mod}css/animate.css" rel="stylesheet">
 
-#{extra_css}
+        #{extra_css}
 
-#{extra_stuff}
+        #{extra_stuff}
 
-</head>
+        </head>
 
-#{body_tag}
+        #{body_tag}
 
-<div id="background" style="z-index: -999; position:absolute; left:0px; right:0px; width:100%; height:100%">
-#{@background.generate}
-</div>
+        <div id="background" style="z-index: -999; position:absolute; left:0px; right:0px; width:100%; height:100%">
+        #{@background.generate}
+        </div>
 
-<div id="content" style="z-index: 0">
-#{@top_content}
-#{@content}
-</div>
+        <div id="content" style="z-index: 0">
+        #{@top_content}
+        #{@content}
+        </div>
 
-    <!-- Mainly scripts -->
-    <script src="#{mod}js/jquery-3.1.1.min.js"></script>
-    <script src="#{mod}js/jquery-ui-1.10.4.min.js"></script>
-    <script src="#{mod}js/bootstrap.min.js"></script>
-    <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
-    <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
-	<script type="text/x-mathjax-config">
-		MathJax.Hub.Config({
-			asciimath2jax: {
-				delimiters: [['$$$MATH$$$','$$$ENDMATH$$$']]
-			}
-		});
-	</script>
-    <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
+            <!-- Mainly scripts -->
+            <script src="#{mod}js/jquery-3.1.1.min.js"></script>
+            <script src="#{mod}js/jquery-ui-1.10.4.min.js"></script>
+            <script src="#{mod}js/bootstrap.min.js"></script>
+            <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
+            <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+        	<script type="text/x-mathjax-config">
+        		MathJax.Hub.Config({
+        			asciimath2jax: {
+        				delimiters: [['$$$MATH$$$','$$$ENDMATH$$$']]
+        			}
+        		});
+        	</script>
+            <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
 
-#{extra_scripts}
-
-
-    <!-- Custom and plugin javascript -->
-    <script src="#{mod}js/weaver.js"></script>
-    #{loading_bar}
-
-    <script>
-#{scripts}
-#{extra_one_time_scripts}
-
-$( document ).ready(function() {
-
-#{onload_scripts}
-
-});
-    </script>
+        #{extra_scripts}
 
 
+            <!-- Custom and plugin javascript -->
+            <script src="#{mod}js/weaver.js"></script>
+            #{loading_bar}
 
-</body>
+            <script>
+        #{scripts}
+        #{extra_one_time_scripts}
 
-</html>
+        $( document ).ready(function() {
+
+        #{onload_scripts}
+
+        });
+            </script>
+
+
+
+        </body>
+
+        </html>
 
       SKELETON
 

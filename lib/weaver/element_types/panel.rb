@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   class Panel < Elements
     def initialize(page, anchors, options = {})

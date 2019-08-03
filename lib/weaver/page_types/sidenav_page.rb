@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'weaver/page_types/nav_page'
 module Weaver
   class SideNavPage < NavPage
@@ -14,10 +16,10 @@ module Weaver
     def generate(level)
       instance_eval &@block
       rows = @rows.map do |row|
-        <<-ENDROW
-	<div class="row #{row.extra_classes}" style="#{row.style}">
-#{row.generate}
-	</div>
+        <<~ENDROW
+          	<div class="row #{row.extra_classes}" style="#{row.style}">
+          #{row.generate}
+          	</div>
         ENDROW
       end.join
 
@@ -82,33 +84,33 @@ module Weaver
 
       @loading_bar_visible = true
       @content =
-        <<-ENDBODY
-	<div id="wrapper">
+        <<~ENDBODY
+          	<div id="wrapper">
 
-		<nav class="navbar-default navbar-static-side" role="navigation">
-			<div class="sidebar-collapse">
-				<ul class="nav" id="side-menu">
+          		<nav class="navbar-default navbar-static-side" role="navigation">
+          			<div class="sidebar-collapse">
+          				<ul class="nav" id="side-menu">
 
-#{brand_content}
-#{navigation.generate}
+          #{brand_content}
+          #{navigation.generate}
 
-				</ul>
-			</div>
-		</nav>
-		<div id="page-wrapper" class="gray-bg">
-			<div class="row border-bottom">
-		        <nav class="navbar navbar-static-top  " role="navigation" style="margin-bottom: 0">
-					<div class="navbar-header">
-					    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
-					</div>
-		            <ul class="nav navbar-top-links navbar-right">
-		                <!-- NAV RIGHT -->
-		            </ul>
-		        </nav>
-	        </div>
-#{rows}
-		</div>
-	</div>
+          				</ul>
+          			</div>
+          		</nav>
+          		<div id="page-wrapper" class="gray-bg">
+          			<div class="row border-bottom">
+          		        <nav class="navbar navbar-static-top  " role="navigation" style="margin-bottom: 0">
+          					<div class="navbar-header">
+          					    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+          					</div>
+          		            <ul class="nav navbar-top-links navbar-right">
+          		                <!-- NAV RIGHT -->
+          		            </ul>
+          		        </nav>
+          	        </div>
+          #{rows}
+          		</div>
+          	</div>
         ENDBODY
 
       super

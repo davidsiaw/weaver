@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'weaver/page_types/structured_page'
 module Weaver
   # Pages with navigation menus

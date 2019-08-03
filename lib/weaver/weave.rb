@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Handles .weave file
   class Weave

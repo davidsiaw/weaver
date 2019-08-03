@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Page that uses columns and rows
   class StructuredPage < Page

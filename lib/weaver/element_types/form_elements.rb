@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require 'weaver/element_types/credit_card_form'
+
 module Weaver
   class FormElements < Elements
     attr_accessor :options, :scripts
@@ -250,6 +254,7 @@ module Weaver
     end
 
     def submit(anIcon, title = {}, options = {}, &block)
+      options[:id] = @page.create_anchor('submit_button')
       options[:icon] = anIcon
       options[:title] = title
       options[:type] = 'submit'
@@ -262,13 +267,13 @@ module Weaver
       @page.request_css 'css/plugins/iCheck/custom.css'
       @page.request_js 'js/plugins/iCheck/icheck.min.js'
 
-      @page.write_script_once <<-SCRIPT
-$(document).ready(function () {
-    $('.i-checks').iCheck({
-        checkboxClass: 'icheckbox_square-green',
-        radioClass: 'iradio_square-green',
-    });
-});
+      @page.write_script_once <<~SCRIPT
+        $(document).ready(function () {
+            $('.i-checks').iCheck({
+                checkboxClass: 'icheckbox_square-green',
+                radioClass: 'iradio_square-green',
+            });
+        });
       SCRIPT
 
       label_options = {}
@@ -294,72 +299,10 @@ $(document).ready(function () {
       elem.generate
     end
 
-    def credit_card(options = {})
-      request_js 'js/plugins/skeuocard/javascripts/skeuocard.min.js'
-      request_js 'js/plugins/skeuocard/javascripts/vendor/cssua.min.js'
-      request_css 'js/plugins/skeuocard/styles/skeuocard.css'
-      request_css 'js/plugins/skeuocard/styles/skeuocard.reset.css'
-
-      card_input_name = options[:id] || @page.create_anchor('credit_card')
-
-      div id: card_input_name, class: 'credit-card-input no-js' do
-        p 'Javascript unavailable', class: 'no-support-warning'
-
-        brands = {
-          visa:           'Visa',
-          discover:       'Discover',
-          mastercard:     'MasterCard',
-          maestro:        'Maestro',
-          jcb:            'JCB',
-          unionpay:       'UnionPay',
-          amex:           'American Express',
-          dinersclubintl: 'Diners Club'
-        }
-
-        elements = {
-          number: 'Card Number',
-          exp_month: 'Expiration Month',
-          exp_year: 'Expiration Year',
-          name: 'Cardholder Name',
-          cvc: 'Card Validation Code'
-        }
-
-        label 'Card Type', for: :"#{card_input_name}_type"
-        method_missing(:select,
-                       name: :"#{card_input_name}_type",
-                       id: "#{card_input_name}_type") do
-          brands.each do |k, v|
-            option v, value: k
-          end
-        end
-
-        elements.each do |k, v|
-          label v, for: :"#{card_input_name}_#{k}"
-          input type: :text, name: :"#{card_input_name}_#{k}",
-                class: k.to_sym,
-                id: "#{card_input_name}_#{k}"
-        end
-      end
-
-      @page.on_page_load <<~SCRIPT
-        var card = new Skeuocard($("##{card_input_name}"), {
-          typeInputSelector: '[name="#{card_input_name}_type"]',
-          numberInputSelector: '[name="#{card_input_name}_number"]',
-          expMonthInputSelector: '[name="#{card_input_name}_exp_month"]',
-          expYearInputSelector: '[name="#{card_input_name}_exp_year"]',
-          nameInputSelector: '[name="#{card_input_name}_name"]',
-          cvcInputSelector: '[name="#{card_input_name}_cvc"]'
-        });
-      SCRIPT
-
-      @scripts << <<~SCRIPT
-        object["#{card_input_name}_type"] = $('##{card_input_name}_type').val();
-        object["#{card_input_name}_number"] = $('##{card_input_name}_number').val();
-        object["#{card_input_name}_exp_month"] = $('##{card_input_name}_exp_month').val();
-        object["#{card_input_name}_exp_year"] = $('##{card_input_name}_exp_year').val();
-        object["#{card_input_name}_name"] = $('##{card_input_name}_name').val();
-        object["#{card_input_name}_cvc"] = $('##{card_input_name}_cvc').val();
-      SCRIPT
+    def credit_card(options = {}, &block)
+      elem = CreditCardForm.new(@page, @anchors, options, &block)
+      elem.apply_script(@scripts)
+      text elem.generate
     end
   end
 end

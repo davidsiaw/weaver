@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   class TextfieldJavascript
     def initialize(id)
@@ -15,41 +17,41 @@ module Weaver
     def generate(&block)
       if block
         instance_eval(&block)
-        <<-SCRIPT
+        <<~SCRIPT
 
-if (!document.validators)
-{
-	document.validators = {};
-}
+          if (!document.validators)
+          {
+          	document.validators = {};
+          }
 
-document.validators["##{@id}"] = function()
-{
-	var valid = function(data) {
-		#{@validate_script};
-		return true;
-	}($("##{@id}").val());
+          document.validators["##{@id}"] = function()
+          {
+          	var valid = function(data) {
+          		#{@validate_script};
+          		return true;
+          	}($("##{@id}").val());
 
-	var object = $("##{@id}");
-	#{@change_script};
+          	var object = $("##{@id}");
+          	#{@change_script};
 
-	if (valid)
-	{
-		object.removeClass("required");
-		object.removeClass("error");
-		object.removeAttr("aria-invalid");
-	}
-	else
-	{
-		object.addClass("required");
-		object.addClass("error");
-		object.attr("aria-required", "true");
-		object.attr("aria-invalid", "true");
-	}
-}
+          	if (valid)
+          	{
+          		object.removeClass("required");
+          		object.removeClass("error");
+          		object.removeAttr("aria-invalid");
+          	}
+          	else
+          	{
+          		object.addClass("required");
+          		object.addClass("error");
+          		object.attr("aria-required", "true");
+          		object.attr("aria-invalid", "true");
+          	}
+          }
 
-$("##{@id}").keyup(function() { document.validators["##{@id}"](); })
-$("##{@id}").blur(function() { document.validators["##{@id}"](); })
-$("##{@id}").focusout(function() { document.validators["##{@id}"](); })
+          $("##{@id}").keyup(function() { document.validators["##{@id}"](); })
+          $("##{@id}").blur(function() { document.validators["##{@id}"](); })
+          $("##{@id}").focusout(function() { document.validators["##{@id}"](); })
 
         SCRIPT
       end

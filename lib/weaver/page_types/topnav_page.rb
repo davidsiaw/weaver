@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'weaver/page_types/nav_page'
 module Weaver
   class TopNavPage < NavPage
@@ -8,10 +10,10 @@ module Weaver
     def generate(level)
       instance_eval &@block
       rows = @rows.map do |row|
-        <<-ENDROW
-	<div class="row #{row.extra_classes}" style="#{row.style}">
-#{row.generate}
-	</div>
+        <<~ENDROW
+          	<div class="row #{row.extra_classes}" style="#{row.style}">
+          #{row.generate}
+          	</div>
         ENDROW
       end.join
 
@@ -34,7 +36,6 @@ module Weaver
                   href: '#',
                   class: 'dropdown-toggle',
                   "data-toggle": 'dropdown' do
-
                   icon item[:icon]
                   text item[:name]
                   span class: 'caret' do
@@ -79,7 +80,6 @@ module Weaver
                   href: '#',
                   class: 'dropdown-toggle',
                   "data-toggle": 'dropdown' do
-
                   icon item[:icon]
                   text item[:name]
                   span class: 'caret' do
@@ -123,40 +123,40 @@ module Weaver
       end
 
       @content =
-        <<-ENDBODY
-	<div id="wrapper">
+        <<~ENDBODY
+          	<div id="wrapper">
 
-        <div id="page-wrapper" class="gray-bg">
-	        <div class="row border-bottom white-bg">
+                  <div id="page-wrapper" class="gray-bg">
+          	        <div class="row border-bottom white-bg">
 
-				<nav class="navbar navbar-static-top" role="navigation">
-	                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
-	                    <i class="fa fa-reorder"></i>
-	                </button>
-#{brand_content}
+          				<nav class="navbar navbar-static-top" role="navigation">
+          	                <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+          	                    <i class="fa fa-reorder"></i>
+          	                </button>
+          #{brand_content}
 
-		            <div class="navbar-collapse collapse" id="navbar">
-		                <ul class="nav navbar-nav">
-#{navigation.generate}
-		                </ul>
-		                <ul class="nav navbar-top-links navbar-right">
-#{navigation_right.generate}
-		                </ul>
-		            </div>
-
-
-
-				</nav>
-			</div>
+          		            <div class="navbar-collapse collapse" id="navbar">
+          		                <ul class="nav navbar-nav">
+          #{navigation.generate}
+          		                </ul>
+          		                <ul class="nav navbar-top-links navbar-right">
+          #{navigation_right.generate}
+          		                </ul>
+          		            </div>
 
 
-	        <div class="wrapper-content">
-	            <div class="container">
-#{rows}
-	            </div>
-			</div>
-		</div>
-	</div>
+
+          				</nav>
+          			</div>
+
+
+          	        <div class="wrapper-content">
+          	            <div class="container">
+          #{rows}
+          	            </div>
+          			</div>
+          		</div>
+          	</div>
         ENDBODY
 
       super

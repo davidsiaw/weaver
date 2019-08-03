@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'weaver/element_types/dynamic_table_cell'
 module Weaver
   # Tables that dynamically load data
@@ -40,11 +42,11 @@ module Weaver
         format = elem.generate
         if elem.transform_script
           func_name = @page.create_anchor 'transform'
-          @page.write_script_once <<-SCRIPT
-document.transform_#{func_name} = function (input)
-{
-#{elem.transform_script}
-}
+          @page.write_script_once <<~SCRIPT
+            document.transform_#{func_name} = function (input)
+            {
+            #{elem.transform_script}
+            }
           SCRIPT
 
           transform = func_name

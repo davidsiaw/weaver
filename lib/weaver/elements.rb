@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Base element class for all HTML elements
   class Elements

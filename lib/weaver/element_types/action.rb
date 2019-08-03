@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   class Action
     def initialize(page, anchors, &block)
@@ -24,10 +26,10 @@ module Weaver
 
     def generate
       # puts @code
-      <<-FUNCTION
-function #{@actionName}(caller, data) {
-	#{@code}
-}
+      <<~FUNCTION
+        function #{@actionName}(caller, data) {
+        	#{@code}
+        }
       FUNCTION
     end
 

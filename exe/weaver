@@ -1,4 +1,5 @@
 #!/usr/bin/exec ruby
+# frozen_string_literal: true
 
 require 'weaver'
 require 'optimist'
@@ -79,12 +80,12 @@ end
 
 def build!(_args)
   opts = Optimist.options do
-    banner <<-EOS
-Generate website
+    banner <<~EOS
+      Generate website
 
-Usage:
-   weaver build [options]
-where [options] are:
+      Usage:
+         weaver build [options]
+      where [options] are:
     EOS
 
     opt :root, 'The root URL to be used in links (e.g.) https://astrobunny.net', type: :string, default: '/'
@@ -142,28 +143,28 @@ def create!(args)
     return
   end
 
-  gemfile = <<-GEMFILE
-source 'https://rubygems.org'
+  gemfile = <<~GEMFILE
+    source 'https://rubygems.org'
 
-gem 'weaver', '~> #{Weaver::VERSION}'
+    gem 'weaver', '~> #{Weaver::VERSION}'
   GEMFILE
 
-  source = <<-SOURCE
-topnav_page "", "My first weaver page" do
-	header do
-		col 12 do
-			h1 "Main page"
+  source = <<~SOURCE
+    topnav_page "", "My first weaver page" do
+    	header do
+    		col 12 do
+    			h1 "Main page"
 
-		end
-	end
+    		end
+    	end
 
-	row do
-		col 12 do
-			h2 "Examples"
-			p "Some content"
-		end
-	end
-end
+    	row do
+    		col 12 do
+    			h2 "Examples"
+    			p "Some content"
+    		end
+    	end
+    end
   SOURCE
 
   to_create = (args[0]).to_s

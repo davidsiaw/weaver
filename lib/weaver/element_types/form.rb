@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'weaver/element_types/form_elements'
 module Weaver
   class Form
@@ -10,13 +12,13 @@ module Weaver
     end
 
     def generate_script
-      <<-SCRIPT
-function get_#{@formName}_object()
-{
-	var object = {}
-#{@form_element.scripts.join "\n"}
-	return object;
-}
+      <<~SCRIPT
+        function get_#{@formName}_object()
+        {
+        	var object = {}
+        #{@form_element.scripts.join "\n"}
+        	return object;
+        }
       SCRIPT
     end
 

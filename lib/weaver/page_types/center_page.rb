@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   # Page where all content is centered
   class CenterPage < Page

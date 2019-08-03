@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Weaver
   class DynamicTableCell < Elements
     attr_accessor :transform_script
