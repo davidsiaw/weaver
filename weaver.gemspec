@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://davidsiaw.github.io/weaver-docs/'
   spec.license       = 'MIT'
 
-  spec.files         = Dir['{data,exe,lib,bin}**/*'] + %w[Gemfile weaver.gemspec]
+  spec.files         = Dir['{data,exe,lib,bin}/**/*'] + %w[Gemfile weaver.gemspec]
   spec.test_files    = Dir['{test,spec,features}/**/*']
   spec.bindir        = 'exe'
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
