@@ -20,7 +20,6 @@ module Weaver
       end
 
       if !inner
-
         options = args[0] || []
         opts = options.map { |key, value| "#{key}=\"#{value}\"" }.join ' '
 
@@ -116,8 +115,8 @@ module Weaver
       @inner_content << tabs.generate
     end
 
-    def syntax(lang = :javascript, &block)
-      code = Code.new(@page, @anchors, lang)
+    def syntax(lang = :javascript, options = {}, &block)
+      code = Code.new(@page, @anchors, lang, options)
       code.instance_eval(&block)
 
       @inner_content << code.generate
@@ -132,7 +131,9 @@ module Weaver
       elsif options[:rounded_corners] == :top
         style += ' border-radius: 8px 8px 0px 0px'
       else
-        style += " border-radius: #{options[:rounded_corners]}px" if options[:rounded_corners]
+        if options[:rounded_corners]
+          style += " border-radius: #{options[:rounded_corners]}px"
+        end
 
       end
 
@@ -309,7 +310,9 @@ module Weaver
 
         action = Action.new(@page, @anchors, &block)
         buttonOptions[:onclick] = "#{action.name}(this)"
-        buttonOptions[:onclick] = "#{action.name}(this, #{options[:data]})#{closer}" if options[:data]
+        if options[:data]
+          buttonOptions[:onclick] = "#{action.name}(this, #{options[:data]})#{closer}"
+        end
         @page.scripts << action.generate
       end
 

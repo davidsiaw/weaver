@@ -99,7 +99,9 @@ module Weaver
       body_tag = "<body class='#{@body_class}'>" if @body_class
 
       loading_bar = ''
-      loading_bar = "<script src='#{mod}js/plugins/pace/pace.min.js'></script>" if @loading_bar_visible
+      if @loading_bar_visible
+        loading_bar = "<script src='#{mod}js/plugins/pace/pace.min.js'></script>"
+      end
 
       extra_scripts = @requested_scripts.map do |key, _value|
         <<-SCRIPT_DECL

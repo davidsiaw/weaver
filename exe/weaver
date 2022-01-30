@@ -7,7 +7,7 @@ require 'sinatra/base'
 
 class Website < Sinatra::Base
   set :static, true # set up static file routing
-  set :public_folder, File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver')	# set up the static dir (with images/js/css inside)
+  set :public_folder, File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver') # set up the static dir (with images/js/css inside)
   set :bind, '0.0.0.0'
   set :port, ENV['PORT'] || 4567
 
@@ -63,6 +63,7 @@ class Website < Sinatra::Base
       if site.pages.key?(path)
 
         level = viewname.split(%r{/}, 0).length
+        content_type 'text/css' if path.end_with?('.css')
         site.pages[path].generate(level)
 
       else

@@ -23,7 +23,7 @@ module Weaver
           panel: { outer: 'panel panel-default', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
           primary: { outer: 'panel panel-primary', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
           success: { outer: 'panel panel-success', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
-          info: { outer: 'panel panel-info',	header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
+          info: { outer: 'panel panel-info', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
           warning: { outer: 'panel panel-warning', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
           danger: { outer: 'panel panel-danger', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' },
           blank: { outer: 'panel blank-panel', header: 'panel-heading', body: 'panel-body', footer: 'panel-footer' }

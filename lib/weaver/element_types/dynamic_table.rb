@@ -281,7 +281,7 @@ module Weaver
         DATATABLE_SCRIPT
 
         @page.onload_scripts << <<-SCRIPT
-        				SCRIPT
+        SCRIPT
       end
 
       method_missing(:table, table_options, &block)

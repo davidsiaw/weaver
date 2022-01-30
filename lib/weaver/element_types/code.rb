@@ -2,11 +2,11 @@
 
 module Weaver
   class Code
-    def initialize(page, anchors, lang)
+    def initialize(page, anchors, lang, options={})
       @page = page
       @anchors = anchors
       @content = ''
-      @options = {}
+      @options = options
 
       codeArray = @anchors['code']
 

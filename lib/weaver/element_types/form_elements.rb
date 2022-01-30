@@ -64,14 +64,18 @@ module Weaver
          end
 
         div "class": div_class do
-          span (options[:front_text]).to_s, class: 'input-group-addon' if options[:front_text]
+          if options[:front_text]
+            span (options[:front_text]).to_s, class: 'input-group-addon'
+          end
           if input_options[:rows] && (input_options[:rows] > 1)
             textarea input_options do
             end
           else
             input input_options
           end
-          span (options[:back_text]).to_s, class: 'input-group-addon' if options[:back_text]
+          if options[:back_text]
+            span (options[:back_text]).to_s, class: 'input-group-addon'
+          end
         end
       end
 
