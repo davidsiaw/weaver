@@ -31,9 +31,9 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'activesupport'
   spec.add_dependency 'optimist'
-  spec.add_dependency 'sinatra', '~> 2.0.3'
+  spec.add_dependency 'rackup'
+  spec.add_dependency 'sinatra', '~> 4'
 
-  spec.add_development_dependency 'bundler', '~> 1.9'
   spec.add_development_dependency 'rake', '~> 10.0'
 
   spec.metadata['allowed_push_host'] = 'https://rubygems.org'
