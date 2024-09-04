@@ -96,19 +96,19 @@ def build!(_args)
 
   buildDir = "#{Dir.pwd}/build"
 
-  cp_r_options = { preserve: true }
+  preserve = true
 
   FileUtils.rm_rf buildDir
-  FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver'), buildDir, cp_r_options)
-  FileUtils.cp_r('images', buildDir, cp_r_options) if Dir.exist? 'images'
+  FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver'), buildDir, preserve: preserve)
+  FileUtils.cp_r('images', buildDir, preserve: preserve) if Dir.exist? 'images'
   if Dir.exist? 'js'
     Dir['js/*.*'].each do |x|
-      FileUtils.cp_r(x, File.join(buildDir, 'js'), cp_r_options)
+      FileUtils.cp_r(x, File.join(buildDir, 'js'), preserve: preserve)
     end
   end
   if Dir.exist? 'css'
     Dir['css/*.*'].each do |x|
-      FileUtils.cp_r(x, File.join(buildDir, 'css'), cp_r_options)
+      FileUtils.cp_r(x, File.join(buildDir, 'css'), preserve: preserve)
     end
   end
 
