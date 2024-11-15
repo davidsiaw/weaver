@@ -76,6 +76,8 @@ module Weaver
                     href: "##{anchor}"
                   }
 
+                  options[:class] = 'collapsed' if is_collapsed
+
                   if value[:mixpanel_event_name]
                     props = {}
                     if value[:mixpanel_event_props].is_a? Hash
