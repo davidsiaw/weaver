@@ -9,7 +9,7 @@ module Weaver
     end
 
     def header(&block)
-      row(class: 'wrapper border-bottom white-bg page-heading', &block)
+      row(class: 'wrapper white-bg page-heading', &block)
     end
 
     def row(options = {}, &block)

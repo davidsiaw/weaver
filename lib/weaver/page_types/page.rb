@@ -91,6 +91,11 @@ module Weaver
       style = <<-ENDSTYLE
 	<link href="#{mod}css/style.css" rel="stylesheet">
       ENDSTYLE
+      if !@options[:theme].nil?
+        style = <<-ENDSTYLE
+  <link href="#{mod}css/style-#{@options[:theme]}.css" rel="stylesheet">
+      ENDSTYLE
+      end
 
       style = '' if options[:style] == :empty
 
