@@ -48,6 +48,14 @@ module Weaver
       @page.request_css(path)
     end
 
+    def set_favicon_path(path)
+      @page.set_favicon_path(path)
+    end
+
+    def set_favicon_type(v)
+      @page.set_favicon_type(v)
+    end
+
     def on_page_load(script)
       @page.on_page_load(script)
     end
