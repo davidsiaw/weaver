@@ -3,7 +3,7 @@
 module Weaver
   # Base page class
   class Page
-    attr_accessor :scripts, :onload_scripts
+    attr_accessor :scripts, :onload_scripts, :favicon_name, :favicon_type
 
     def initialize(title, global_settings, options, &block)
       @title = title
@@ -155,6 +155,9 @@ mixpanel.init("' + @global_settings[:mixpanel_token] + '");</script><!-- end Mix
         GOOGLE
       end
 
+      favicon_filename = @favicon_name || 'favicon.ico'
+      favicon_mimetype = @favicon_type || 'image/x-icon'
+
       result = <<~SKELETON
         <!DOCTYPE html>
         <html>
@@ -169,6 +172,8 @@ mixpanel.init("' + @global_settings[:mixpanel_token] + '");</script><!-- end Mix
             <link href="#{mod}css/bootstrap.min.css" rel="stylesheet">
             <link href="#{mod}font-awesome/css/font-awesome.css" rel="stylesheet">
             <link href="#{mod}css/plugins/iCheck/custom.css" rel="stylesheet">
+
+            <link rel="icon" href="#{favicon_filename}" type="#{favicon_mimetype}" />
 
             #{style}
 
