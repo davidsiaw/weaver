@@ -45,6 +45,14 @@ module Weaver
       @requested_scripts[path] = true
     end
 
+    def set_favicon_path(path)
+      @favicon_name = path
+    end
+
+    def set_favicon_type(val)
+      @favicon_type = val
+    end
+
     def request_css(path)
       @requested_css[path] = true
     end
