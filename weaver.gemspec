@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rackup'
   spec.add_dependency 'sinatra', '~> 4'
 
-  spec.add_development_dependency 'rake', '~> 10.0'
+  spec.add_development_dependency 'rake'
 
   spec.metadata['allowed_push_host'] = 'https://rubygems.org'
 end
