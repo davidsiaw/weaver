@@ -308,7 +308,8 @@ module Weaver
       buttonOptions = {
         type: options[:type] || 'button',
         class: "btn btn-#{style} #{size} #{blockstyle} #{outline} #{dim}",
-        id: options[:id]
+        id: options[:id],
+        style: "#{options[:css_style]}"
       }
 
       if block
