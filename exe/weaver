@@ -104,12 +104,14 @@ def build!(_args)
   FileUtils.cp_r('images', buildDir, preserve: preserve) if Dir.exist? 'images'
   if Dir.exist? 'js'
     Dir['js/**/*.*'].each do |x|
-      FileUtils.cp_r(x, File.join(buildDir, 'js'), preserve: preserve)
+      FileUtils.mkdir_p File.dirname(File.join(buildDir, x))
+      FileUtils.cp_r(x, File.join(buildDir, x), preserve: preserve)
     end
   end
   if Dir.exist? 'css'
     Dir['css/**/*.*'].each do |x|
-      FileUtils.cp_r(x, File.join(buildDir, 'css'), preserve: preserve)
+      FileUtils.mkdir_p File.dirname(File.join(buildDir, x))
+      FileUtils.cp_r(x, File.join(buildDir, x), preserve: preserve)
     end
   end
 
