@@ -103,12 +103,12 @@ def build!(_args)
   FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver'), buildDir, preserve: preserve)
   FileUtils.cp_r('images', buildDir, preserve: preserve) if Dir.exist? 'images'
   if Dir.exist? 'js'
-    Dir['js/*.*'].each do |x|
+    Dir['js/**/*.*'].each do |x|
       FileUtils.cp_r(x, File.join(buildDir, 'js'), preserve: preserve)
     end
   end
   if Dir.exist? 'css'
-    Dir['css/*.*'].each do |x|
+    Dir['css/**/*.*'].each do |x|
       FileUtils.cp_r(x, File.join(buildDir, 'css'), preserve: preserve)
     end
   end
