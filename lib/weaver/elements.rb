@@ -40,6 +40,26 @@ module Weaver
       @page.root
     end
 
+    def clear_default_meta!
+      @page.clear_default_meta!
+    end
+
+    def head(&block)
+      @page.head(&block)
+    end
+
+    def top(&block)
+      @page.top(&block)
+    end
+
+    def meta(options = {}, &block)
+      method_missing(:meta, options, &block)
+    end
+
+    def script(options = {}, &block)
+      method_missing(:script, options, &block)
+    end
+
     def request_js(path)
       @page.request_js(path)
     end
@@ -66,10 +86,6 @@ module Weaver
 
     def background(&block)
       @page.background(block)
-    end
-
-    def on_page_load(script)
-      @page.on_page_load(script)
     end
 
     def icon(type)

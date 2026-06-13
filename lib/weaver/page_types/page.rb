@@ -21,9 +21,20 @@ module Weaver
       @requested_scripts = {}
       @requested_css = {}
 
+      @meta_tags = []
+
       @background = Elements.new(self, @anchors)
 
+      m1 = Elements.new(self, @anchors)
+      m1.instance_eval do
+        meta charset: 'utf-8'
+        meta name: 'viewport', contents: 'width=device-width, initial-scale=1.0'
+      end
+
+      @meta_tags << m1
+
       @block = Proc.new &block
+
     end
 
     def create_anchor(name)
@@ -69,11 +80,32 @@ module Weaver
       @background.instance_eval(&block)
     end
 
+    def head(&block)
+      $stderr.puts 'head'
+      m1 = Elements.new(self, @anchors)
+      m1.instance_eval(&block)
+
+      @meta_tags << m1
+    end
+
+    def clear_default_meta!
+      @meta_tags = []
+    end
+
     def top(&block)
       elem = Elements.new(self, @anchors)
       elem.instance_eval(&block)
 
       @top_content = elem.generate
+    end
+
+    def generate_meta_tags
+      content = ""
+      @meta_tags.each do |x|
+        content += "\n#{x.generate}"
+      end
+
+      content
     end
 
     def generate(back_folders, options = {})
@@ -172,8 +204,7 @@ mixpanel.init("' + @global_settings[:mixpanel_token] + '");</script><!-- end Mix
         <!-- Generated using weaver: https://github.com/davidsiaw/weaver -->
         <head>
 
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            #{generate_meta_tags}
 
             <title>#{@title}</title>
 
