@@ -28,7 +28,7 @@ module Weaver
       m1 = Elements.new(self, @anchors)
       m1.instance_eval do
         meta charset: 'utf-8'
-        meta name: 'viewport', contents: 'width=device-width, initial-scale=1.0'
+        meta name: 'viewport', content: 'width=device-width, initial-scale=1.0'
       end
 
       @meta_tags << m1
