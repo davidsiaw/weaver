@@ -11,6 +11,15 @@ class Website < Sinatra::Base
   set :bind, '0.0.0.0'
   set :port, ENV['PORT'] || 4567
   set :host_authorization, { permitted_hosts: [] }
+  mime_type :webmanifest, 'application/manifest+json'
+
+  # Files in the project's root/ directory are served at the top of the site (and
+  # `weaver build` copies them there): favicons, robots.txt, CNAME, service workers...
+  def root_file(path)
+    root = File.expand_path('root')
+    file = File.expand_path(path, root)
+    file if file.start_with?("#{root}/") && File.file?(file)
+  end
 
   def getWeavefile(viewname)
     pathToFile = viewname.split('/').delete_if(&:empty?)
@@ -40,6 +49,10 @@ class Website < Sinatra::Base
   end
 
   get '/*' do
+    if (file = root_file(params[:splat].first))
+      return send_file(file, disposition: 'inline')
+    end
+
     if params[:splat].first.start_with? 'images/'
       return send_file(params[:splat].first, disposition: 'inline')
     end
@@ -102,6 +115,7 @@ def build!(_args)
   FileUtils.rm_rf buildDir
   FileUtils.cp_r(File.join(Gem.loaded_specs['weaver'].full_gem_path, 'data', 'weaver'), buildDir, preserve: preserve)
   FileUtils.cp_r('images', buildDir, preserve: preserve) if Dir.exist? 'images'
+  FileUtils.cp_r('root/.', buildDir, preserve: preserve) if Dir.exist? 'root'
   if Dir.exist? 'js'
     Dir['js/**/*.*'].each do |x|
       FileUtils.mkdir_p File.dirname(File.join(buildDir, x))
