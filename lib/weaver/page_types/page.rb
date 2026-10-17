@@ -99,6 +99,29 @@ module Weaver
       @top_content = elem.generate
     end
 
+    MATH_MARKER = '$$$MATH$$$'
+
+    # MathJax is large and keeps fetching files as it runs, so only pages that
+    # actually contain math (see Elements#math) load it
+    def uses_math?
+      [@content, @top_content, @background.generate].any? { |html| html.to_s.include?(MATH_MARKER) }
+    end
+
+    def mathjax_scripts(mod)
+      return '' unless uses_math?
+
+      <<~MATHJAX
+        <script type="text/x-mathjax-config">
+          MathJax.Hub.Config({
+            asciimath2jax: {
+              delimiters: [['#{MATH_MARKER}','$$$ENDMATH$$$']]
+            }
+          });
+        </script>
+        <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
+      MATHJAX
+    end
+
     def generate_meta_tags
       content = ""
       @meta_tags.each do |x|
@@ -241,15 +264,7 @@ mixpanel.init("' + @global_settings[:mixpanel_token] + '");</script><!-- end Mix
             <script src="#{mod}js/bootstrap.min.js"></script>
             <script src="#{mod}js/plugins/metisMenu/jquery.metisMenu.js"></script>
             <script src="#{mod}js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
-        	<script type="text/x-mathjax-config">
-        		MathJax.Hub.Config({
-        			asciimath2jax: {
-        				delimiters: [['$$$MATH$$$','$$$ENDMATH$$$']]
-        			}
-        		});
-        	</script>
-            <script src="#{mod}js/MathJax/MathJax.js?config=AM_HTMLorMML-full" async></script>
-
+        #{mathjax_scripts(mod)}
         #{extra_scripts}
 
 
